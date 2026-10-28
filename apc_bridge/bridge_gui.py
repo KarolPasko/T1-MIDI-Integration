@@ -377,7 +377,7 @@ class BridgeApp:
             if self.sender is not None:
                 self.sender.stop(self.engine.dmx_frame())
                 self.sender = None
-            log.info("Output OFF (Titan keeps the last levels it received)")
+            log.info("Output OFF (sACN stream terminated)")
         self._update_output_view()
 
     def _update_output_view(self) -> None:

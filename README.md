@@ -61,7 +61,9 @@ a ninth playback by default.
    level. The Status column says where ("Move fader to 0%"), and the track
    button under the fader blinks until then. That way nothing jumps when you
    switch on or change settings.
-5. Click **Switch output OFF** when done. Titan keeps the last levels.
+5. Click **Switch output OFF** when done. *Not verified yet:* whether Titan
+   keeps the last levels or releases the playbacks when sACN stops. Please
+   check this once, with no audience present.
 
 ### On the APC mini
 
