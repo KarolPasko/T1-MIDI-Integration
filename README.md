@@ -130,6 +130,26 @@ Shift or fader to edit it on the right, or click **Learn** and then press or
 move the real control. Changes take effect straight away; click **Save** (or
 **Save as**) to keep them.
 
+### Live-show features
+
+* **BLACKOUT** (button in the top bar, or the **Esc** key): every channel goes
+  to 0 straight away, and faders and buttons are ignored until you click
+  **Release blackout**. Toggles stay off, and each fader must be brought down
+  to 0 before it takes control again, so nothing jumps back on. You can also
+  give an APC mini button (Shift works well) the **Blackout** mode: press
+  once for blackout, press again to release. It blinks during blackout.
+  Releasing on purpose needs the button, never the Esc key.
+* **Auto-reconnect:** if the APC mini's USB cable comes out, output switches
+  OFF and a red banner says so. Plug it back in and it reconnects by itself
+  within a couple of seconds. Output stays OFF until you switch it on again.
+* **Activity lights:** the MIDI light flashes when the APC mini sends
+  something, the sACN light when levels go out to Titan. **Show timer:** how
+  long output has been ON.
+* A red banner appears if the window loses contact with the bridge, and the
+  window asks before it closes (closing stops the output).
+* Mappings are locked while output is ON, so a stray click cannot change them
+  mid-show. **Ctrl+S** (Cmd+S on a Mac) saves.
+
 ### What each button can do
 
 | Mode | What happens | sACN it sends |
@@ -137,8 +157,10 @@ move the real control. Changes take effect straight away; click **Save** (or
 | Not used | Nothing (the pads in "Faders only") | – |
 | Momentary | ON while you hold it, like a flash button | ON level while held, OFF level otherwise |
 | Toggle | Press once for ON, again for OFF | ON level or OFF level |
+| Toggle in a group | Give toggles the same **Group** number (1–99): switching one on switches the others in that group off, like radio buttons. Pressing the lit one turns it off. Shown as [G1] etc. on the pads | ON level or OFF level |
 | Fader on/off | Switches one fader on/off (the bottom row and bottom-right button in "Faders only") | – |
 | Output status light | Lit while output is ON, blinking while OFF (the top-right button in "Faders only") | – |
+| Blackout | Press: every channel to 0. Press again: release. Blinks during blackout | 0 on every channel |
 
 Each momentary/toggle button gets its own sACN channel (a free one is picked
 when you choose the mode) and its own **light when ON** and **light when OFF**

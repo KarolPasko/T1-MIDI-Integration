@@ -11,6 +11,11 @@ Rules:
   made while output is off cannot fire anything later.
 * In learn mode, a press or fader move only selects that control; nothing
   is triggered.
+* Toggles in the same group are exclusive: switching one on switches the
+  others in that group off (like radio buttons). All can still be off.
+* Blackout sends zero on every channel and ignores faders and buttons until
+  it is released. Toggles are switched off, and every fader must then be
+  picked up from zero, so nothing jumps back on when it is released.
 * LEDs reflect this program's own state. sACN is one-way, so Titan's real
   playback state is never known.
 """
@@ -21,7 +26,7 @@ from dataclasses import dataclass, field
 
 from . import apc_mini
 from .apc_mini import GridLed, RoundLed
-from .config import (FADER_ENABLE, MOMENTARY, OUTPUT_STATUS, SENDING_MODES, TOGGLE, UNUSED,
+from .config import (BLACKOUT, FADER_ENABLE, MOMENTARY, OUTPUT_STATUS, SENDING_MODES, TOGGLE, UNUSED,
                      BridgeConfig, ButtonMapping, FaderMapping)
 from .pickup import Pickup
 
@@ -56,6 +61,7 @@ class BridgeEngine:
         config.validate()
         self.config = config
         self.output_enabled = False
+        self.blackout = False
         self.learning = False
         self.learned: tuple[str, int] | None = None   # ("fader", index) or ("button", note)
         self.pressed: set[int] = set()
@@ -91,6 +97,17 @@ class BridgeEngine:
             self.active = {n for n in self.active if self.config.button(n).mode == TOGGLE}
         self.output_enabled = enabled
 
+    def set_blackout(self, on: bool) -> None:
+        if on:
+            self.active.clear()
+            for f in self.faders:
+                f.output = 0
+                self._arm(f)
+        elif self.blackout:
+            for f in self.faders:  # pick up from zero
+                self._arm(f)
+        self.blackout = on
+
     def toggle_fader(self, index: int) -> None:
         f = self.faders[index]
         f.mapping.enabled = not f.mapping.enabled
@@ -124,7 +141,7 @@ class BridgeEngine:
             self.learned = ("fader", self.faders.index(f))
             self.learning = False
             return False
-        if not (self.output_enabled and f.mapping.enabled):
+        if self.blackout or not (self.output_enabled and f.mapping.enabled):
             return False
         taken = f.pickup.update(scale(value, f.mapping, self.config.max_output_percent))
         if taken is None or taken == f.output:
@@ -142,11 +159,19 @@ class BridgeEngine:
             self.learned = ("button", note)
             self.learning = False
             return False
+        if b.mode == BLACKOUT:
+            self.set_blackout(not self.blackout)
+            return True
+        if self.blackout:
+            return False
         if b.mode == FADER_ENABLE and b.fader < len(self.faders):
             self.toggle_fader(b.fader)
             return False
         if b.mode in SENDING_MODES and self.output_enabled:
             if b.mode == MOMENTARY or note not in self.active:
+                if b.mode == TOGGLE and b.group:
+                    self.active -= {o.note for o in self.config.buttons
+                                    if o.mode == TOGGLE and o.group == b.group}
                 self.active.add(note)
             else:
                 self.active.discard(note)
@@ -168,6 +193,8 @@ class BridgeEngine:
 
     def dmx_frame(self) -> bytes:
         data = bytearray(512)
+        if self.blackout:
+            return bytes(data)
         for f in self.faders:
             data[f.mapping.address - 1] = f.output
         for b in self.config.buttons:
@@ -203,6 +230,9 @@ class BridgeEngine:
                 # Use the button's chosen colour for "live" on grid pads.
                 leds[b.note] = b.active_led if (state == RoundLed.ON and apc_mini.control_kind(b.note) == "grid") \
                     else self._as_kind(b, state)
+            elif b.mode == BLACKOUT:
+                if self.blackout:
+                    leds[b.note] = self._as_kind(b, RoundLed.BLINK)
             elif b.mode == OUTPUT_STATUS:
                 leds[b.note] = self._as_kind(b, RoundLed.ON if self.output_enabled else RoundLed.BLINK)
         return {n: int(s) for n, s in leds.items() if s}

@@ -236,3 +236,71 @@ def test_remapping_drops_active_state():
     cfg.button(0).mode = "unused"
     e.apply_config(cfg)
     assert e.active == set()
+
+
+def test_blackout_zeroes_everything_and_ignores_input():
+    cfg = BridgeConfig()
+    btn = cfg.button(0)
+    btn.mode, btn.address, btn.off_percent = TOGGLE, 20, 10
+    e = BridgeEngine(cfg)
+    e.set_output_enabled(True)
+    e.handle_cc(CH, 48, 0)
+    e.handle_cc(CH, 48, 127)
+    e.handle_press(0)
+    assert e.dmx_frame()[0] == 255 and e.dmx_frame()[19] == 255
+    e.set_blackout(True)
+    assert e.dmx_frame() == bytes(512)          # even the button's 10% OFF level
+    assert e.handle_cc(CH, 48, 50) is False and e.handle_press(0) is False
+    assert e.dmx_frame() == bytes(512)
+    e.set_blackout(False)
+    assert 0 not in e.active                    # the toggle stays off
+    assert e.dmx_frame()[19] == 26              # back to its OFF level
+    assert e.handle_cc(CH, 48, 120) is False    # fader must come down to zero first
+    e.handle_cc(CH, 48, 1)
+    assert e.faders[0].picked_up and e.handle_cc(CH, 48, 127)
+
+
+def test_blackout_button_toggles_and_blinks():
+    from apc_bridge.config import BLACKOUT
+    cfg = BridgeConfig()
+    cfg.button(98).mode = BLACKOUT          # Shift
+    cfg.button(64).mode = BLACKOUT          # a round button with a light
+    e = BridgeEngine(cfg)
+    e.set_output_enabled(True)
+    assert e.handle_press(98) and e.blackout
+    assert e.led_states()[64] == RoundLed.BLINK
+    e.handle_release(98)
+    assert e.handle_press(98) and not e.blackout
+    assert 64 not in e.led_states()
+
+
+def test_toggle_group_is_exclusive():
+    cfg = BridgeConfig()
+    for note, addr, group in ((0, 20, 1), (1, 21, 1), (2, 22, 1), (3, 23, 0), (4, 24, 2)):
+        b = cfg.button(note)
+        b.mode, b.address, b.group = TOGGLE, addr, group
+    e = BridgeEngine(cfg)
+    e.set_output_enabled(True)
+    for n in (0, 3, 4):
+        e.handle_press(n)
+        e.handle_release(n)
+    assert e.active == {0, 3, 4}
+    e.handle_press(1)                      # same group as 0: 0 goes off
+    assert e.active == {1, 3, 4}
+    frame = e.dmx_frame()
+    assert (frame[19], frame[20], frame[22], frame[23]) == (0, 255, 255, 255)
+    e.handle_press(1)                      # pressing the lit one turns it off: group all off
+    assert e.active == {3, 4}
+
+
+def test_group_saved_and_validated(tmp_path):
+    from apc_bridge import config as cfgmod
+    cfg = BridgeConfig()
+    b = cfg.button(0)
+    b.mode, b.address, b.group = TOGGLE, 20, 5
+    cfgmod.save(cfg, tmp_path / "g.json")
+    assert cfgmod.load(tmp_path / "g.json").button(0).group == 5
+    b.group = 100
+    import pytest
+    with pytest.raises(cfgmod.ConfigError):
+        cfg.validate()

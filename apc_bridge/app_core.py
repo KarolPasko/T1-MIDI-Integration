@@ -14,7 +14,7 @@ import threading
 import time
 from pathlib import Path
 
-from . import apc_mini, ports
+from . import __version__, apc_mini, ports
 from .bridge import BridgeEngine
 from .config import BridgeConfig, ConfigError
 from .library import PRESET, SAVED, MappingLibrary, check_name
@@ -94,6 +94,10 @@ class BridgeCore:
         self.simulate_output = False
         self.led_error: str | None = None
         self.port_list = ports.PortList([], [])
+        self.wanted_ports: tuple[str, str] | None = None   # what to reconnect to after an unplug
+        self.apc_lost = False
+        self.midi_count = 0          # MIDI messages received, for the activity light
+        self.output_on_since: float | None = None
         self.dirty = False
         self._last_send = self._last_led = self._last_watchdog = 0.0
         self._stop = threading.Event()
@@ -106,7 +110,8 @@ class BridgeCore:
 
     def shutdown(self) -> None:
         self._stop.set()
-        self._thread.join(timeout=2)
+        if self._thread.is_alive():
+            self._thread.join(timeout=2)
         with self.lock:
             self.disconnect()
         logging.getLogger().removeHandler(self.logbuf)
@@ -125,6 +130,7 @@ class BridgeCore:
                 ev = self.events.get_nowait()
             except queue.Empty:
                 break
+            self.midi_count += 1
             if ev.channel != 1:
                 continue
             if ev.is_cc:
@@ -141,6 +147,7 @@ class BridgeCore:
                 except SacnError as exc:
                     log.error("%s - output switched OFF", exc)
                     self.engine.set_output_enabled(False)
+                    self.output_on_since = None
                     self.sender = None
                 self._last_send = now
                 self.dirty = False
@@ -163,23 +170,49 @@ class BridgeCore:
             log.error("LED feedback stopped: %s", exc)
 
     def _watchdog(self) -> None:
-        if self.simulate_midi or not (self.midi_in.is_open or self.leds.is_open):
+        if self.simulate_midi or self.wanted_ports is None:
             return
         pl = ports.list_ports()
         if pl.error:
             return
         if self.midi_in.is_open and not ports.still_present(self.midi_in.port_name, pl.inputs):
             self.midi_in.close()
+            self.apc_lost = True
             if self.engine.output_enabled:
                 self.set_output(False)
-                log.warning("APC mini unplugged: output switched OFF. Reconnect, then switch output "
-                            "ON again (faders will need pickup).")
+                log.warning("APC mini unplugged: output switched OFF. Plug it back in; it reconnects "
+                            "by itself, then switch output ON again (faders will need pickup).")
             else:
                 log.warning("APC mini input disappeared (unplugged?)")
         if self.leds.is_open and not ports.still_present(self.leds.port_name, pl.outputs):
             self.leds.close()
+            self.apc_lost = True
             self.led_error = "APC mini LED output disappeared"
             log.warning(self.led_error)
+        if self.apc_lost:
+            self._reconnect(pl)
+
+    def _reconnect(self, pl: ports.PortList) -> None:
+        """Reopen the APC mini once it is plugged back in. Output stays OFF."""
+        want_in, want_out = self.wanted_ports
+        new_in = next((n for n in pl.inputs if ports.base_name(n) == ports.base_name(want_in)), None) \
+            if want_in else None
+        new_out = next((n for n in pl.outputs if ports.base_name(n) == ports.base_name(want_out)), None) \
+            if want_out else None
+        if (want_in and not new_in) or (want_out and not new_out):
+            return
+        try:
+            if new_in and not self.midi_in.is_open:
+                self.midi_in.open(new_in)
+            if new_out and not self.leds.is_open:
+                self.leds.open(new_out)
+                self.led_error = None
+        except (MidiInputError, LedOutputError) as exc:
+            log.warning("APC mini is back but could not be reopened yet: %s", exc)
+            return
+        self.apc_lost = False
+        self.refresh_ports()
+        log.info("APC mini reconnected. Output is still OFF: switch it ON when ready.")
 
     # ---------------------------------------------------------------- devices
     def refresh_ports(self) -> None:
@@ -209,10 +242,14 @@ class BridgeCore:
                     errors.append(str(exc))
             if errors:
                 raise ActionError(" ".join(errors))
+            self.wanted_ports = (input_name, output_name)
+            self.apc_lost = False
             log.info("Connected")
 
     def disconnect(self) -> None:
         with self.lock:
+            self.wanted_ports = None
+            self.apc_lost = False
             self.set_output(False)
             if self.leds.is_open:
                 try:
@@ -233,11 +270,13 @@ class BridgeCore:
                 except SacnError as exc:
                     raise ActionError(str(exc)) from exc
                 self.engine.set_output_enabled(True)
+                self.output_on_since = time.monotonic()
                 self.dirty = True
                 log.info("Output ON (%s) universe %d -> %s. Move each fader to its last level to pick it up.",
                          "SIMULATED" if self.simulate_output else "sACN", cfg.universe, self.sender.dest[0])
             elif not on and self.engine.output_enabled:
                 self.engine.set_output_enabled(False)
+                self.output_on_since = None
                 if self.sender is not None:
                     self.sender.stop(self.engine.dmx_frame())
                     self.sender = None
@@ -318,6 +357,16 @@ class BridgeCore:
             self.unsaved = False
             log.info("Saved to %s", path)
 
+    def set_blackout(self, on: bool) -> None:
+        with self.lock:
+            if bool(on) != self.engine.blackout:
+                self.engine.set_blackout(bool(on))
+                self.dirty = True
+                if on:
+                    log.warning("BLACKOUT: every channel at zero")
+                else:
+                    log.info("Blackout released: bring each fader down to zero to pick it up")
+
     def set_learning(self, on: bool) -> None:
         with self.lock:
             self.engine.set_learning(bool(on))
@@ -328,7 +377,13 @@ class BridgeCore:
             e = self.engine
             learned = e.take_learned()
             return {
+                "version": __version__,
                 "simulate_midi": self.simulate_midi,
+                "apc_lost": self.apc_lost,
+                "midi_count": self.midi_count,
+                "blackout": e.blackout,
+                "output_on_for": round(time.monotonic() - self.output_on_since)
+                if self.output_on_since is not None else None,
                 "ports": {"inputs": self.port_list.inputs, "outputs": self.port_list.outputs,
                           "error": self.port_list.error},
                 "midi_in": {"open": self.midi_in.is_open, "name": self.midi_in.port_name},
