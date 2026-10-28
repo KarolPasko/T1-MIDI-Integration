@@ -1,6 +1,6 @@
 # T1-MIDI-Integration
 
-A free, open-source Windows 11 app that lets an **original first-generation
+A free, open-source Windows 11 (and macOS) app that lets an **original first-generation
 AKAI APC mini** control playback levels in **Avolites Titan Go** running with a
 **T1** interface, with feedback on the APC mini's LEDs.
 
@@ -31,6 +31,51 @@ Windows SmartScreen may warn that the app is from an "unknown publisher",
 because it is not code-signed (signing costs money). Click **More info →
 Run anyway**. You only need Python if you want to run from source or
 build the .exe yourself (see "Installation" and "Building the .exe" below).
+
+## On a Mac
+
+Titan Go only runs on Windows, so on a Mac the bridge does **not** talk to
+Titan on the same computer. The setup is:
+
+```
+APC mini --USB--> Mac (this app) --sACN over the network--> Windows PC running Titan Go + T1
+```
+
+The Mac and the Titan PC must be on the same network (a network cable
+between them, or the same router/switch). **Not verified yet:** this route
+(Mac to a separate Titan PC) has not been tested on a real rig. Only the
+same-laptop Windows setup has been.
+
+**Installing:**
+
+1. On GitHub click **Actions → Mac build**, open the newest run with a green
+   tick, and download the **.dmg** for your Mac:
+   * **APC-Titan-Bridge-mac-arm64** for Apple silicon (M1, M2, M3, M4…)
+   * **APC-Titan-Bridge-mac-x86_64** for older Intel Macs
+   (Apple menu → **About This Mac** shows which one you have.)
+2. Unzip it, open the .dmg, and drag **APC Titan Bridge** onto **Applications**.
+3. The app is not signed with a paid Apple developer certificate, so the
+   first time macOS says it "cannot be opened" or "cannot verify the
+   developer". Click **Done** (not Move to Bin), then open **System Settings →
+   Privacy & Security**, scroll down and click **Open Anyway** next to
+   APC Titan Bridge, and confirm with your password. After that it opens
+   normally. (On older macOS you can instead right-click the app → **Open**.)
+4. When macOS asks whether the app may **find devices on your local
+   network**, click **Allow**. Without it no sACN reaches Titan. You can
+   change it later in **System Settings → Privacy & Security → Local Network**.
+
+**Settings on a Mac:**
+
+* Your saved mappings and logs are in **Documents → APC Titan Bridge**.
+* In **Output settings**, choose **Unicast to IP** and enter the **Titan PC's
+  IP address** (on the Titan PC: Settings → Network & Internet → your
+  connection → IPv4 address). The default Multicast may also work, but on a
+  Mac it can go out of the wrong network connection (e.g. Wi-Fi instead of
+  the cable), so unicast is the safer choice.
+* On the Titan PC, Windows Firewall may block incoming sACN (UDP port 5568).
+  If Titan's trigger does not react, allow Titan Go through the firewall for
+  private networks.
+* The Titan Go trigger setup is the same as on Windows (see below).
 
 ## The programs
 
@@ -169,6 +214,10 @@ tools, and rewriting the tested MIDI/sACN code in another language. Instead,
 this app uses the same kind of HTML interface in a native window
 (**pywebview**, which uses the Edge WebView2 engine built into Windows 11),
 packaged with **PyInstaller**. Both are free and need nothing but Python.
+
+To build the Mac app yourself, on a Mac with Python 3.12 run
+`./build_mac.sh` in the project folder. It creates
+`dist/APC-Titan-Bridge-mac-<arm64 or x86_64>.dmg`.
 
 ## sACN trigger test
 
