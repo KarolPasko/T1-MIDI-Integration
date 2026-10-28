@@ -56,8 +56,14 @@ You only do this once.
 
 ### 1. Install Python
 
-1. Go to <https://www.python.org/downloads/windows/> and download **Python 3.12**
-   (the "Windows installer (64-bit)"). Newer versions should also work.
+1. Go to <https://www.python.org/downloads/windows/>, scroll down to the latest
+   **Python 3.12.x** release, and download its "Windows installer (64-bit)".
+
+   **It must be 3.12, not 3.13 or 3.14.** The MIDI library `python-rtmidi`
+   (version 1.5.8, the newest) only ships ready-made Windows downloads for
+   Python 3.8 to 3.12. On newer Python, pip tries to compile it from source
+   and fails with "Unknown compiler(s)". It is fine to have 3.12 installed
+   alongside a newer Python; all commands below use `py -3.12` to pick it.
 2. Run the installer. On the first screen **tick "Add python.exe to PATH"**,
    then click **Install Now**. Leave the "tcl/tk and IDLE" option ticked (it is
    by default); the app's window needs it.
@@ -65,10 +71,11 @@ You only do this once.
    check it worked:
 
    ```
-   py --version
+   py -3.12 --version
    ```
 
-   You should see something like `Python 3.12.x`.
+   You should see something like `Python 3.12.x`. (`py --list` shows every
+   Python you have installed.)
 
 ### 2. Get the code
 
@@ -84,7 +91,7 @@ In Command Prompt, go into the folder (change the path to wherever you put it):
 
 ```
 cd C:\APC-Bridge
-py -m pip install -r requirements.txt
+py -3.12 -m pip install -r requirements.txt
 ```
 
 This installs `mido` and `python-rtmidi` (both free and open source).
@@ -94,14 +101,14 @@ This installs `mido` and `python-rtmidi` (both free and open source).
 Plug in the APC mini first, then:
 
 ```
-py run_apc_bridge.py
+py -3.12 run_apc_bridge.py
 ```
 
 To look around **without the controller plugged in**, run the simulator. It
 invents fader moves and button presses and is clearly labelled SIMULATION:
 
 ```
-py run_apc_bridge.py --simulate
+py -3.12 run_apc_bridge.py --simulate
 ```
 
 A log file is written to `logs\apc_bridge.log` in the folder you ran it from.
@@ -153,14 +160,18 @@ the window and the `logs\apc_bridge.log` file are ideal.
 the Python installer, choose *Modify*, and make sure "Add Python to environment
 variables" / "py launcher" is ticked. Then close and reopen Command Prompt.
 
-**`pip install` fails while building `python-rtmidi`** (errors mentioning a C
-compiler or "Microsoft Visual C++ 14.0 is required") – there is no ready-made
-download for your Python version yet. Install Python 3.12 from python.org and
-run `py -3.12 -m pip install -r requirements.txt`, then start the app with
-`py -3.12 run_apc_bridge.py`.
+**`pip install` fails while building `python-rtmidi`** (errors such as
+"Unknown compiler(s)", "Failed to activate VS environment" or "Microsoft
+Visual C++ 14.0 is required") – your Python is too new for python-rtmidi's
+ready-made download (it covers Python 3.8-3.12 on Windows). You do not need a
+compiler: install Python 3.12 as in step 1, then run
+`py -3.12 -m pip install -r requirements.txt` and start the app with
+`py -3.12 run_apc_bridge.py`. Because pip stops at the first failure, `mido`
+will also be missing until this succeeds.
 
 **`ModuleNotFoundError: No module named 'mido'`** – step 3 was skipped or ran
-for a different Python. Run `py -m pip install -r requirements.txt` again.
+for a different Python. Run `py -3.12 -m pip install -r requirements.txt` again,
+and start the app with `py -3.12`, not plain `py`.
 
 **`No module named 'tkinter'`** – reinstall Python from python.org (not the
 Microsoft Store version) and keep "tcl/tk and IDLE" ticked.
@@ -203,8 +214,8 @@ plug it back in, click **Refresh devices**, then **Connect**.
 ## For developers
 
 ```
-py -m pip install -r requirements-dev.txt
-py -m pytest
+py -3.12 -m pip install -r requirements-dev.txt
+py -3.12 -m pytest
 ```
 
 Code layout:
