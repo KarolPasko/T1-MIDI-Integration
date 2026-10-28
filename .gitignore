@@ -4,3 +4,5 @@ __pycache__/
 venv/
 logs/
 .pytest_cache/
+config.json
+config.json.tmp

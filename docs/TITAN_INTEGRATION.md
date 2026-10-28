@@ -9,13 +9,17 @@ were used. The "Test" sections say how to check each point safely.
 T1. The plan is now **sACN triggers** (section 5), tested with
 `run_sacn_test.py`.
 
+**Verified 28 Oct 2026:** with `run_sacn_test.py`, a Set Level trigger with an
+sACN source in Titan Go v18.0 + T1 on the same laptop "works perfect". The
+playback follows the sent value. `run_bridge.py` is built on this.
+
 ## Short answer
 
 | Route | Works with T1? | Source |
 |---|---|---|
 | Titan's built-in MIDI triggers (System → Triggers, "learn" a MIDI device) | **No, per Avolites.** That needs a **T2** or a console | Avolites manual (T1 and T2 page) and Avolites staff on the forum |
 | Titan **WebAPI** (official HTTP interface, port 4430) | **No.** Documented as unavailable on T1, and the test on v18 answered "Titan is unavailable" | avosupport.de WebAPI docs + test |
-| Titan **sACN triggers** (Triggers window, source = Streaming ACN) | **Listed as supported on T1.** Smooth level control not yet tested | avosupport.de trigger docs |
+| Titan **sACN triggers** (Triggers window, source = Streaming ACN) | **Yes, verified** on v18.0 + T1 with Set Level | avosupport.de trigger docs + test |
 | Mouse automation of Titan Go's on-screen playback faders | Yes, technically. It is the least reliable route | Fallback in the project plan |
 | Copying how OsiMIDI T1 does it | Unknown. OsiMIDI is closed-source and does not publish its method | App Store listing |
 
