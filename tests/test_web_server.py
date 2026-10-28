@@ -11,7 +11,7 @@ from apc_bridge.web_server import make_server, serve_in_background
 
 @pytest.fixture
 def app(tmp_path):
-    core = BridgeCore(tmp_path / "config.json", simulate_midi=True)
+    core = BridgeCore(tmp_path, simulate_midi=True)
     core.start()
     server, url = make_server(core)
     serve_in_background(server)
@@ -54,8 +54,12 @@ def test_output_settings_and_save_flow(app, tmp_path):
     btn = next(b for b in cfg["buttons"] if b["note"] == 0)
     btn.update(mode="toggle", address=30, label="Strobe")
     assert call("POST", "/api/settings", {"config": cfg})[0] == 200
+    # nothing is open yet, so plain Save needs a name
+    assert call("POST", "/api/save", {})[0] == 400
+    assert call("POST", "/api/save", {"name": "Test"})[0] == 200
+    assert json.loads((tmp_path / "mappings" / "Test.json").read_text())["buttons"][0]["label"] == "Strobe"
+    assert call("GET", "/api/state")[1]["state"]["current"] == {"kind": "saved", "name": "Test"}
     assert call("POST", "/api/save", {})[0] == 200
-    assert json.loads((tmp_path / "config.json").read_text())["buttons"][0]["label"] == "Strobe"
     assert call("POST", "/api/simulate_output", {"on": True})[0] == 200
     assert call("POST", "/api/output", {"on": True})[0] == 200
     # settings are locked while output is on
@@ -85,3 +89,32 @@ def test_learn_via_simulated_controller(app):
 def test_unknown_action(app):
     core, call = app
     assert call("POST", "/api/format_disk", {})[0] == 404
+
+
+def test_start_screen_files_and_open(app):
+    core, call = app
+    state = call("GET", "/api/state")[1]["state"]
+    assert state["current"] is None
+    presets = [f["name"] for f in state["files"] if f["kind"] == "preset"]
+    assert "All buttons momentary" in presets and "All buttons toggle" in presets
+    assert call("POST", "/api/open", {"kind": "preset", "name": "All buttons toggle"})[0] == 200
+    state = call("GET", "/api/state")[1]["state"]
+    assert state["current"] == {"kind": "preset", "name": "All buttons toggle"}
+    assert {b["mode"] for b in state["config"]["buttons"] if b["note"] != 98} == {"toggle"}
+    # a ready-made file can't be overwritten
+    status, body = call("POST", "/api/save", {})
+    assert status == 400 and "Save as" in body["error"]
+    assert call("POST", "/api/open", {"kind": "preset", "name": "../secret"})[0] == 400
+    assert call("POST", "/api/open", {"kind": "preset", "name": "Missing"})[0] == 400
+
+
+def test_import_and_new(app):
+    core, call = app
+    cfg = call("GET", "/api/state")[1]["state"]["config"]
+    cfg["universe"] = 12
+    assert call("POST", "/api/import", {"config": cfg, "name": "From USB"})[0] == 200
+    state = call("GET", "/api/state")[1]["state"]
+    assert state["current"]["name"] == "From USB" and state["unsaved"] and state["config"]["universe"] == 12
+    assert call("POST", "/api/import", {"config": {"universe": 0}, "name": "bad"})[0] == 400
+    assert call("POST", "/api/new", {})[0] == 200
+    assert call("GET", "/api/state")[1]["state"]["config"]["universe"] == 10
