@@ -248,10 +248,11 @@ class App:
         tk.Label(f, text="LIGHTING OUTPUT: DISABLED", bg="#7a0000", fg="white",
                  font=("Segoe UI", 12, "bold"), padx=8, pady=6).pack(fill="x", padx=6, pady=6)
         ttk.Label(f, wraplength=380, justify="left", text=(
-            "Stage 1 is a read-only monitor. This build contains no Titan Go adapter "
-            "and no code that can send a lighting command, so nothing you do here "
-            "can change your lights.\n\n"
-            "Titan Go integration: not connected - to be investigated in Stage 3.\n\n"
+            "This window is a read-only monitor. It has no lighting output, so "
+            "nothing you do here can change your lights.\n\n"
+            "Titan Go: the sACN trigger test (run_sacn_test.py) is a separate "
+            "program and is the only part of this project that can send anything "
+            "Titan could act on.\n\n"
             "The LED test sends Note On messages to the APC mini's own port only. "
             "Close Titan Go (or make sure it is not using the APC mini) while testing, "
             "because on Windows only one program can open a MIDI port at a time."
