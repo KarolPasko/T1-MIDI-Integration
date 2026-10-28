@@ -2,6 +2,9 @@
 
 ## From the Stage 1 hardware test
 
+Done 28 Oct 2026: buttons, faders and all LED states confirmed on real
+hardware. The original checklist is kept below for reference.
+
 Please run the checks in the README ("Verifying the protocol") and report:
 
 1. **Faders:** did all 9 faders appear as CC 48-56 on channel 1? Did any show up
@@ -15,8 +18,7 @@ Please run the checks in the README ("Verifying the protocol") and report:
    everything?
 4. The `logs\apc_bridge.log` file and a screenshot, if possible.
 
-Once confirmed, the "Documented, not yet verified" rows in the README can be
-marked verified, and Stage 2 can build on them.
+The README's protocol table is now marked verified.
 
 ## For Stage 2 (mapping engine, all simulated, no lighting)
 
