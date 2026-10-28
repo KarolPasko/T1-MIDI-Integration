@@ -22,6 +22,7 @@ jobs:
         run: >
           python -m PyInstaller --noconfirm --clean --onefile --windowed
           --name APC-Titan-Bridge
+          --icon assets\icon.ico
           --add-data "apc_bridge\web;apc_bridge\web"
           --add-data "apc_bridge\presets;apc_bridge\presets"
           --collect-submodules mido
