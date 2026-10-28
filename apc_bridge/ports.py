@@ -27,7 +27,7 @@ def list_ports() -> PortList:
         return PortList(list(mido.get_input_names()), list(mido.get_output_names()))
     except ImportError as exc:
         return PortList([], [], f"MIDI backend not installed ({exc}). "
-                                "Run: py -m pip install -r requirements.txt")
+                                "Run: py -3.12 -m pip install -r requirements.txt")
     except Exception as exc:  # rtmidi raises its own error types
         return PortList([], [], f"Could not list MIDI ports: {exc}")
 

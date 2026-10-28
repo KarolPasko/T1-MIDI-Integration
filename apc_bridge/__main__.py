@@ -1,5 +1,5 @@
-"""Start the app:  py -m apc_bridge            (real hardware)
-                   py -m apc_bridge --simulate (no hardware, fake APC mini)
+"""Start the app:  py -3.12 -m apc_bridge            (real hardware)
+                   py -3.12 -m apc_bridge --simulate (no hardware, fake APC mini)
 """
 
 from __future__ import annotations
@@ -28,8 +28,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         import mido  # noqa: F401
     except ImportError:
-        print("The 'mido' library is missing. Install it with:\n"
-              "    py -m pip install -r requirements.txt", file=sys.stderr)
+        print("The 'mido' library is missing for this Python "
+              f"({sys.version.split()[0]}). Install it with:\n"
+              "    py -3.12 -m pip install -r requirements.txt\n"
+              "then start the app with:  py -3.12 run_apc_bridge.py\n"
+              "(python-rtmidi only has ready-made Windows downloads for Python 3.8-3.12.)",
+              file=sys.stderr)
         return 1
     try:
         import tkinter as tk
