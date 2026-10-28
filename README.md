@@ -16,11 +16,27 @@ incoming value like a fader. This was verified with Titan Go v18.0 and a T1 on
 APC mini fader --MIDI--> this app --sACN (one channel per fader)--> Titan Go trigger --> playback level
 ```
 
-## The three programs
+## Getting the app
+
+**Easiest: download the ready-made .exe.** Every change to `main` is built
+automatically on GitHub's Windows machines:
+
+1. Open the repository on GitHub and click **Actions**, then **Windows build**.
+2. Click the newest run with a green tick, scroll down to **Artifacts**, and
+   download **APC-Titan-Bridge**. It is a .zip with `APC-Titan-Bridge.exe` inside.
+3. Put the .exe in its own folder, e.g. `C:\APC-Bridge`. Its settings
+   (`config.json`) and `logs` are kept next to it.
+
+Windows SmartScreen may warn that the app is from an "unknown publisher",
+because it is not code-signed (signing costs money). Click **More info →
+Run anyway**. You only need Python if you want to run from source or
+build the .exe yourself (see "Installation" and "Building the .exe" below).
+
+## The programs
 
 | Run | What it is for |
 |---|---|
-| `py -3.12 run_bridge.py` | **The bridge.** Faders control Titan Go playbacks, with LED feedback |
+| `APC-Titan-Bridge.exe` or `py -3.12 run_bridge.py` | **The bridge.** Faders and buttons control Titan Go, with LED feedback |
 | `py -3.12 run_apc_bridge.py` | MIDI monitor and LED test. Read-only, sends no lighting data |
 | `py -3.12 run_sacn_test.py` | Single-channel sACN test, used to prove the Titan trigger works |
 
@@ -31,63 +47,97 @@ Only one of them can use the APC mini at a time.
 | 1 | MIDI monitor and LED test | Done, verified on hardware |
 | 2 | Fader mapping, pickup/soft takeover, saved settings, simulated output | Done |
 | 3 | Find a legitimate way to control Titan Go with the T1 | Done: sACN triggers, verified |
-| 4 | Connect mapping to Titan Go | **This release**: the bridge, needs a full test on your rig |
-| 5 | Package as a standalone .exe | Not started |
+| 4 | Connect mapping to Titan Go | Done: faders and buttons, needs a full test on your rig |
+| 5 | Package as a standalone .exe with an HTML interface | **This release** |
 
 ## Using the bridge
 
+The bridge window shows a picture of the APC mini. Click any pad, round
+button, Shift or fader to edit it on the right, or click **Learn** and then
+press or move the real control.
+
+### What each button can do
+
+| Mode | What happens | sACN it sends |
+|---|---|---|
+| Not used | Nothing (the default for the 64 pads) | – |
+| Momentary | ON while you hold it, like a flash button | ON level while held, OFF level otherwise |
+| Toggle | Press once for ON, again for OFF | ON level or OFF level |
+| Fader on/off | Switches one fader on/off (default for the round buttons under the faders and the bottom-right one) | – |
+| Output status light | Lit while output is ON, blinking while OFF (default for the top-right button) | – |
+
+Each momentary/toggle button gets its own sACN channel (the editor's **Next
+free** button picks one) and its own **light when ON** and **light when OFF**
+colours, using only what the hardware can show:
+* grid pads: off, green, red or yellow, each steady or blinking
+* bottom row: red or blinking red
+* right-hand column: green or blinking green
+
+Giving a mapped button a "light when OFF" colour makes every mapped pad
+visible at a glance.
+
+Buttons only react while output is ON, so pressing them while output is off
+cannot fire anything later.
+
 ### One-time setup in Titan Go
 
-For each fader you want to use, in Titan Go go to **System → Triggers**, add
-a mapping (or use the one from the test), and add a trigger:
+For every fader and every mapped button, in Titan Go go to **System → Triggers**,
+add a trigger:
 
 * Type **Item**. Pick the playback and set the action to **Set Level**.
-* Source **Streaming ACN (sACN)**, universe **10**, address = the fader's
-  **sACN ch** from the bridge's table. By default fader 1 is channel 1,
-  fader 2 is channel 2, and so on, with the master fader on channel 9.
+* Source **Streaming ACN (sACN)**, universe **10** (or yours), address = the
+  control's **sACN channel** in the bridge. By default faders 1–8 are channels
+  1–8 and the master fader is channel 9.
 
-Or turn **Learn On**, switch the bridge's output on, and move that one fader.
+Or turn **Learn On** in Titan, switch the bridge's output on, and use that
+control once.
 
 Titan saves triggers per show and per hardware, so this is done once per show.
 Triggers cannot target Titan's masters, so the APC master fader is mapped to
-a ninth playback by default.
+a ninth playback by default. Only **Set Level** has been tested. Other Titan
+trigger actions (for example Go on a cue list) may also work with a button,
+but they have not been verified.
 
 ### Every time
 
-1. Plug in the APC mini, start Titan Go, then run `py -3.12 run_bridge.py`.
-2. Click **Connect**. The top-right scene button blinks: output is **OFF**.
+1. Plug in the APC mini, start Titan Go, then start the bridge.
+2. Click **Connect**. The top-right button on the APC blinks: output is **OFF**.
 3. Click **Switch output ON** (the bar at the top turns red).
 4. **Pickup:** each fader only takes control once you move it to its last
-   level. The Status column says where ("Move fader to 0%"), and the track
-   button under the fader blinks until then. That way nothing jumps when you
-   switch on or change settings.
+   level. Its status shows "Pickup N%", and its on/off button blinks until
+   then. That way nothing jumps when you switch on or change settings.
 5. Click **Switch output OFF** when done. *Not verified yet:* whether Titan
    keeps the last levels or releases the playbacks when sACN stops. Please
    check this once, with no audience present.
 
-### On the APC mini
-
-* **Grid columns:** a level meter for faders 1–8 (green, then yellow, red at the top).
-* **Track buttons (under the grid):** press to switch that fader on/off.
-  Lit = live, blinking = waiting for pickup or output off, dark = off.
-* **Bottom scene button:** the same for the master fader.
-* **Top scene button:** lit = output ON, blinking = output OFF.
-
 The LEDs show **what this app is doing**. sACN only goes one way, so they
-cannot show Titan's real playback state. If you move a playback in Titan
+cannot show Titan's real playback state. If you change a playback in Titan
 itself, the LEDs will not know.
 
 ### Settings
 
-* The table sets each fader's label, sACN channel, on/off, and min/max %.
-  **Max output %** caps every fader. Settings are locked while output is ON.
-* **Save settings** writes `config.json` in the folder you run from.
-  It is loaded automatically next time.
-* **Simulate only** calculates everything but sends nothing to the network,
-  for trying settings without touching the lights.
-* If Titan does not react, try **Unicast to 127.0.0.1** instead of Multicast.
+* Change things in the editor, then click **Apply changes** and **Save**.
+  Settings are locked while output is ON, except switching faders on/off.
+* **Max output %** caps every fader and button.
+* **Simulate only** calculates everything but sends nothing to the network.
+* If Titan does not react, try **Unicast to IP** with 127.0.0.1 instead of
+  Multicast.
 * If the APC mini is unplugged while output is on, output switches **OFF**.
   Reconnect and switch it on again (pickup applies).
+* `py -3.12 run_bridge.py --simulate` runs with a fake APC mini, and
+  `--browser` opens the interface in your web browser instead of a window.
+
+## Building the .exe yourself
+
+With Python 3.12 installed (see below), double-click `build_exe.bat` or run it
+in Command Prompt from the project folder. It installs PyInstaller (free) and
+creates `dist\APC-Titan-Bridge.exe`.
+
+Why not Tauri? Tauri would mean installing Rust and Visual Studio build
+tools, and rewriting the tested MIDI/sACN code in another language. Instead,
+this app uses the same kind of HTML interface in a native window
+(**pywebview**, which uses the Edge WebView2 engine built into Windows 11),
+packaged with **PyInstaller**. Both are free and need nothing but Python.
 
 ## sACN trigger test
 
@@ -173,7 +223,7 @@ Either:
   e.g. `C:\APC-Bridge`; or
 * if you have Git: `git clone https://github.com/KarolPasko/T1-MIDI-Integration.git`
 
-### 3. Install the two MIDI libraries
+### 3. Install the libraries
 
 In Command Prompt, go into the folder (change the path to wherever you put it):
 
@@ -182,7 +232,7 @@ cd C:\APC-Bridge
 py -3.12 -m pip install -r requirements.txt
 ```
 
-This installs `mido` and `python-rtmidi` (both free and open source).
+This installs `mido`, `python-rtmidi` and `pywebview` (all free and open source).
 
 ### 4. Run it
 
@@ -294,6 +344,9 @@ plug it back in, click **Refresh devices**, then **Connect**.
   Titan does nothing with it unless a matching trigger exists.
 * The bridge uses pickup, a max output cap, and switches output off if the
   APC mini disappears. It never claims to know Titan's actual state.
+* The bridge's interface server only listens on this computer (127.0.0.1)
+  and needs a secret token that only its own window has, so web pages open
+  in a browser cannot control it.
 * MIDI input and LED output are separate modules (`midi_input.py`,
   `led_output.py`). Button presses never automatically send LED messages, so
   there are no feedback loops; LEDs only change when you click a test button.
@@ -325,7 +378,10 @@ Code layout:
 | `apc_bridge/sacn_test.py` | sACN trigger test window |
 | `apc_bridge/config.py` | Bridge settings, JSON save/load |
 | `apc_bridge/bridge.py` | Mapping engine (pure logic, unit tested) |
-| `apc_bridge/bridge_gui.py` | Bridge window |
+| `apc_bridge/app_core.py` | Running bridge: MIDI/sACN/LED loop on one thread, with a lock |
+| `apc_bridge/web_server.py` | Local-only web server and JSON API (token-protected) |
+| `apc_bridge/web/index.html` | The HTML interface |
+| `apc_bridge/app.py` | Starts it all in a pywebview window |
 
 What is needed to start Stages 2 and 3 is in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
 The Titan Go investigation (Stage 3) is in [docs/TITAN_INTEGRATION.md](docs/TITAN_INTEGRATION.md).
