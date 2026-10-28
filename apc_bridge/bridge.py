@@ -11,6 +11,8 @@ Rules:
   made while output is off cannot fire anything later.
 * In learn mode, a press or fader move only selects that control; nothing
   is triggered.
+* Toggles in the same group are exclusive: switching one on switches the
+  others in that group off (like radio buttons). All can still be off.
 * Blackout sends zero on every channel and ignores faders and buttons until
   it is released. Toggles are switched off, and every fader must then be
   picked up from zero, so nothing jumps back on when it is released.
@@ -167,6 +169,9 @@ class BridgeEngine:
             return False
         if b.mode in SENDING_MODES and self.output_enabled:
             if b.mode == MOMENTARY or note not in self.active:
+                if b.mode == TOGGLE and b.group:
+                    self.active -= {o.note for o in self.config.buttons
+                                    if o.mode == TOGGLE and o.group == b.group}
                 self.active.add(note)
             else:
                 self.active.discard(note)

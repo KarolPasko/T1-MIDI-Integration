@@ -88,7 +88,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 1,
@@ -99,7 +100,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 2,
@@ -110,7 +112,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 3,
@@ -121,7 +124,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 4,
@@ -132,7 +136,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 5,
@@ -143,7 +148,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 6,
@@ -154,7 +160,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 7,
@@ -165,7 +172,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 8,
@@ -176,7 +184,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 9,
@@ -187,7 +196,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 10,
@@ -198,7 +208,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 11,
@@ -209,7 +220,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 12,
@@ -220,7 +232,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 13,
@@ -231,7 +244,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 14,
@@ -242,7 +256,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 15,
@@ -253,7 +268,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 16,
@@ -264,7 +280,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 17,
@@ -275,7 +292,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 18,
@@ -286,7 +304,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 19,
@@ -297,7 +316,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 20,
@@ -308,7 +328,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 21,
@@ -319,7 +340,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 22,
@@ -330,7 +352,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 23,
@@ -341,7 +364,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 24,
@@ -352,7 +376,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 25,
@@ -363,7 +388,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 26,
@@ -374,7 +400,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 27,
@@ -385,7 +412,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 28,
@@ -396,7 +424,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 29,
@@ -407,7 +436,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 30,
@@ -418,7 +448,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 31,
@@ -429,7 +460,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 32,
@@ -440,7 +472,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 33,
@@ -451,7 +484,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 34,
@@ -462,7 +496,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 35,
@@ -473,7 +508,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 36,
@@ -484,7 +520,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 37,
@@ -495,7 +532,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 38,
@@ -506,7 +544,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 39,
@@ -517,7 +556,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 40,
@@ -528,7 +568,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 41,
@@ -539,7 +580,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 42,
@@ -550,7 +592,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 43,
@@ -561,7 +604,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 44,
@@ -572,7 +616,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 45,
@@ -583,7 +628,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 46,
@@ -594,7 +640,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 47,
@@ -605,7 +652,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 48,
@@ -616,7 +664,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 49,
@@ -627,7 +676,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 50,
@@ -638,7 +688,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 51,
@@ -649,7 +700,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 52,
@@ -660,7 +712,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 53,
@@ -671,7 +724,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 54,
@@ -682,7 +736,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 55,
@@ -693,7 +748,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 56,
@@ -704,7 +760,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 57,
@@ -715,7 +772,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 58,
@@ -726,7 +784,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 59,
@@ -737,7 +796,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 60,
@@ -748,7 +808,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 61,
@@ -759,7 +820,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 62,
@@ -770,7 +832,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 63,
@@ -781,7 +844,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 3
+      "idle_led": 3,
+      "group": 0
     },
     {
       "note": 64,
@@ -792,7 +856,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 2,
-      "idle_led": 1
+      "idle_led": 1,
+      "group": 0
     },
     {
       "note": 65,
@@ -803,7 +868,8 @@
       "off_percent": 0.0,
       "fader": 1,
       "active_led": 2,
-      "idle_led": 1
+      "idle_led": 1,
+      "group": 0
     },
     {
       "note": 66,
@@ -814,7 +880,8 @@
       "off_percent": 0.0,
       "fader": 2,
       "active_led": 2,
-      "idle_led": 1
+      "idle_led": 1,
+      "group": 0
     },
     {
       "note": 67,
@@ -825,7 +892,8 @@
       "off_percent": 0.0,
       "fader": 3,
       "active_led": 2,
-      "idle_led": 1
+      "idle_led": 1,
+      "group": 0
     },
     {
       "note": 68,
@@ -836,7 +904,8 @@
       "off_percent": 0.0,
       "fader": 4,
       "active_led": 2,
-      "idle_led": 1
+      "idle_led": 1,
+      "group": 0
     },
     {
       "note": 69,
@@ -847,7 +916,8 @@
       "off_percent": 0.0,
       "fader": 5,
       "active_led": 2,
-      "idle_led": 1
+      "idle_led": 1,
+      "group": 0
     },
     {
       "note": 70,
@@ -858,7 +928,8 @@
       "off_percent": 0.0,
       "fader": 6,
       "active_led": 2,
-      "idle_led": 1
+      "idle_led": 1,
+      "group": 0
     },
     {
       "note": 71,
@@ -869,7 +940,8 @@
       "off_percent": 0.0,
       "fader": 7,
       "active_led": 2,
-      "idle_led": 1
+      "idle_led": 1,
+      "group": 0
     },
     {
       "note": 82,
@@ -880,7 +952,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     },
     {
       "note": 83,
@@ -891,7 +964,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     },
     {
       "note": 84,
@@ -902,7 +976,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     },
     {
       "note": 85,
@@ -913,7 +988,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     },
     {
       "note": 86,
@@ -924,7 +1000,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     },
     {
       "note": 87,
@@ -935,7 +1012,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     },
     {
       "note": 88,
@@ -946,7 +1024,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 1,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     },
     {
       "note": 89,
@@ -957,7 +1036,8 @@
       "off_percent": 0.0,
       "fader": 8,
       "active_led": 1,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     },
     {
       "note": 98,
@@ -968,7 +1048,8 @@
       "off_percent": 0.0,
       "fader": 0,
       "active_led": 0,
-      "idle_led": 0
+      "idle_led": 0,
+      "group": 0
     }
   ]
 }

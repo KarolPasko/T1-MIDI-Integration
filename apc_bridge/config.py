@@ -26,6 +26,7 @@ BUTTON_MODES = (UNUSED, MOMENTARY, TOGGLE, FADER_ENABLE, OUTPUT_STATUS, BLACKOUT
 SENDING_MODES = (MOMENTARY, TOGGLE)
 
 BUTTON_NOTES = apc_mini.LED_NOTES + (apc_mini.SHIFT_NOTE,)
+MAX_GROUP = 99
 
 
 class ConfigError(ValueError):
@@ -63,6 +64,7 @@ class ButtonMapping:
     fader: int = 0               # which fader (0-8) for fader_enable
     active_led: int = 1          # LED state while ON (pressed / toggled on)
     idle_led: int = 0            # LED state while mapped but OFF
+    group: int = 0               # toggles only: 1-99 = turning this on turns the rest of the group off
 
     @property
     def name(self) -> str:
@@ -78,6 +80,8 @@ class ButtonMapping:
                 raise ConfigError(f"{self.name}: sACN channel must be 1-512")
             if not (0 <= self.on_percent <= 100 and 0 <= self.off_percent <= 100):
                 raise ConfigError(f"{self.name}: on/off levels must be 0-100%")
+        if not 0 <= self.group <= MAX_GROUP:
+            raise ConfigError(f"{self.name}: group must be 0 (none) to {MAX_GROUP}")
         if self.mode == FADER_ENABLE and not 0 <= self.fader < fader_count:
             raise ConfigError(f"{self.name}: fader must be 1-{fader_count}")
         allowed = [int(s) for s in apc_mini.allowed_states(self.note)] or [0]
@@ -176,7 +180,8 @@ class BridgeConfig:
                     on_percent=float(raw.get("on_percent", 100)), off_percent=float(raw.get("off_percent", 0)),
                     fader=int(raw.get("fader", 0)),
                     active_led=int(raw.get("active_led", base.active_led)),
-                    idle_led=int(raw.get("idle_led", base.idle_led)))
+                    idle_led=int(raw.get("idle_led", base.idle_led)),
+                    group=int(raw.get("group", 0)))
             cfg = cls(universe=int(data.get("universe", 10)), unicast_ip=data.get("unicast_ip") or None,
                       max_output_percent=float(data.get("max_output_percent", 100)),
                       led_feedback=bool(data.get("led_feedback", True)),

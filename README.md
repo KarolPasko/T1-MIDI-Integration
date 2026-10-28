@@ -157,6 +157,7 @@ move the real control. Changes take effect straight away; click **Save** (or
 | Not used | Nothing (the pads in "Faders only") | – |
 | Momentary | ON while you hold it, like a flash button | ON level while held, OFF level otherwise |
 | Toggle | Press once for ON, again for OFF | ON level or OFF level |
+| Toggle in a group | Give toggles the same **Group** number (1–99): switching one on switches the others in that group off, like radio buttons. Pressing the lit one turns it off. Shown as [G1] etc. on the pads | ON level or OFF level |
 | Fader on/off | Switches one fader on/off (the bottom row and bottom-right button in "Faders only") | – |
 | Output status light | Lit while output is ON, blinking while OFF (the top-right button in "Faders only") | – |
 | Blackout | Press: every channel to 0. Press again: release. Blinks during blackout | 0 on every channel |
