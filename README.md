@@ -6,8 +6,8 @@ running with a **T1** interface, with feedback on the APC mini's LEDs.
 
 ## Current status: Stage 1 (monitor + LED test only)
 
-This version **does not control any lighting.** It contains no Titan Go code at
-all. It does three things:
+The main app (`run_apc_bridge.py`) **does not control any lighting.** It does
+three things:
 
 1. **Finds the APC mini** (MIDI input and MIDI output are shown separately).
 2. **Shows every MIDI message** it sends: type, channel, note/controller number,
@@ -19,9 +19,33 @@ all. It does three things:
 |---|---|---|
 | 1 | MIDI monitor and LED test | **This release** |
 | 2 | Fader mapping, pickup/soft takeover, saved configs, simulated lighting targets | Not started |
-| 3 | Find a legitimate way to control Titan Go with the T1 | Not started |
+| 3 | Find a legitimate way to control Titan Go with the T1 | **In progress**: sACN triggers, see below |
 | 4 | Connect mapping to Titan Go | Not started |
 | 5 | Package as a standalone .exe | Not started |
+
+## Stage 3 test: sACN trigger test
+
+With a T1, Titan Go cannot take MIDI in directly (that needs a T2), and the
+Titan WebAPI answered "Titan is unavailable" on our test laptop. Titan does
+list **sACN** (a free network lighting protocol) as a trigger input on the T1.
+`run_sacn_test.py` checks whether that can work like a fader. Details are in
+[docs/TITAN_INTEGRATION.md](docs/TITAN_INTEGRATION.md).
+
+```
+py -3.12 run_sacn_test.py
+```
+
+* It starts with **output OFF**. Nothing is sent until you click "Send sACN: switch ON".
+* It sends one channel on one universe (default universe 10, channel 1).
+  Titan ignores it unless you create a matching trigger in System → Triggers.
+* A slider sets the value. Optionally, one APC mini fader drives it with
+  **pickup**: the fader does nothing until it reaches the current level, so
+  nothing jumps. A max output % caps the level.
+* Switching it off sends the standard sACN "stream terminated" message, so
+  Titan releases the source straight away.
+
+Close the main app before using an APC fader here, because only one program
+can open the APC mini at a time.
 
 ## What is documented vs. verified
 
@@ -202,8 +226,9 @@ plug it back in, click **Refresh devices**, then **Connect**.
 
 ## Safety design
 
-* Lighting output is **disabled**. There is no Titan Go adapter in this build,
-  so nothing can change your lights.
+* The main app has **no lighting output**. The only thing that can send data
+  Titan could act on is the separate sACN test tool. Its output starts off
+  and needs a matching trigger in Titan to do anything.
 * MIDI input and LED output are separate modules (`midi_input.py`,
   `led_output.py`). Button presses never automatically send LED messages, so
   there are no feedback loops; LEDs only change when you click a test button.
@@ -230,6 +255,9 @@ Code layout:
 | `apc_bridge/midi_events.py` | Decoding messages for display |
 | `apc_bridge/simulation.py` | Fake APC mini for `--simulate` |
 | `apc_bridge/gui.py` | tkinter window |
+| `apc_bridge/sacn.py` | sACN (E1.31) packet builder and sender |
+| `apc_bridge/pickup.py` | MIDI to DMX scaling and fader pickup |
+| `apc_bridge/sacn_test.py` | sACN trigger test window |
 
 What is needed to start Stages 2 and 3 is in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
 The Titan Go investigation (Stage 3) is in [docs/TITAN_INTEGRATION.md](docs/TITAN_INTEGRATION.md).

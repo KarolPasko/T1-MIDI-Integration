@@ -2,15 +2,20 @@
 
 Investigated 28 Oct 2026 for **Titan Go v18.0 + T1, running on the same laptop
 as the APC mini**. Only public Avolites documentation and community sources
-were used. Nothing in this file has been tested on your laptop yet. The
-"Test" sections say how to check each point safely.
+were used. The "Test" sections say how to check each point safely.
+
+**Update 28 Oct 2026:** the WebAPI browser test returned
+`<string>Titan is unavailable.</string>`, so the WebAPI route is closed with a
+T1. The plan is now **sACN triggers** (section 5), tested with
+`run_sacn_test.py`.
 
 ## Short answer
 
 | Route | Works with T1? | Source |
 |---|---|---|
 | Titan's built-in MIDI triggers (System → Triggers, "learn" a MIDI device) | **No, per Avolites.** That needs a **T2** or a console | Avolites manual (T1 and T2 page) and Avolites staff on the forum |
-| Titan **WebAPI** (official HTTP interface, port 4430) | **Documented as not available on T1/Titan One.** Not yet tested on v18 | avosupport.de WebAPI docs |
+| Titan **WebAPI** (official HTTP interface, port 4430) | **No.** Documented as unavailable on T1, and the test on v18 answered "Titan is unavailable" | avosupport.de WebAPI docs + test |
+| Titan **sACN triggers** (Triggers window, source = Streaming ACN) | **Listed as supported on T1.** Smooth level control not yet tested | avosupport.de trigger docs |
 | Mouse automation of Titan Go's on-screen playback faders | Yes, technically. It is the least reliable route | Fallback in the project plan |
 | Copying how OsiMIDI T1 does it | Unknown. OsiMIDI is closed-source and does not publish its method | App Store listing |
 
@@ -67,6 +72,12 @@ http://localhost:4430/titan/get/System/SoftwareVersion
   available with the T1, as documented. We will **not** try to work around
   that, because it is a licensing restriction.
 
+**Result (28 Oct 2026):** the URL returned `<string>Titan is unavailable.</string>`.
+Something on port 4430 answers, but it will not give access to Titan with a T1
+(this matches the documentation). If Titan Go was not fully started with a
+show loaded during that test, it could be worth one retry. Otherwise this
+route is closed.
+
 ## 3. Mouse automation (fallback)
 
 If both of the above are unavailable, the app can move Titan Go's on-screen
@@ -90,13 +101,43 @@ Titan Go. We will not reverse-engineer it or copy its code. If the WebAPI
 test above fails, the most likely explanation is that it drives Titan Go's
 user interface, which is route 3, but that is a guess.
 
+## 5. sACN triggers (current plan)
+
+sACN (ANSI E1.31, "Streaming ACN") is an open standard for sending DMX over a
+network. Titan's Triggers window can take **Streaming ACN** as an input source
+(settings: Universe and Address). The community trigger documentation marks
+it as supported on **Titan One and T1**. An item trigger can use actions
+including **Fire At Level** and **Set Level**.
+
+So the app can send sACN, one channel per fader, and Titan Go maps each
+channel to a playback with a trigger. That is an official Titan feature used
+as intended, and it works on the same laptop.
+
+What is **not** known yet, and what `run_sacn_test.py` checks:
+
+1. Does Titan Go with a T1 accept sACN triggers in v18?
+2. Does **Set Level** follow the incoming value continuously, like a fader?
+   Or does it fire only once when the value crosses a threshold?
+3. Does Titan Go receive sACN sent from the same laptop by multicast? If not,
+   does unicast to `127.0.0.1` or to the laptop's own IP address work?
+
+Known limits from the same documentation:
+
+* Triggers are saved per hardware and cannot be copied between shows.
+* Triggers cannot target **masters** (so the grand master is probably not
+  controllable this way) or **macros**.
+* sACN carries data one way only, so Titan's real playback state cannot be
+  read back. Pad LEDs would show the app's local state, labelled as such.
+
+**Test steps:** see the README section "Stage 3 test: sACN trigger test".
+
 ## What is needed next
 
-1. The result of the **WebAPI browser test** (section 2). This decides
-   everything else.
-2. Optionally, the result of the **Triggers test** (section 1).
-3. Which playbacks each fader should control. The default is faders 1–8 →
-   playbacks 1–8 on the current page, and the master fader → grand master.
+1. The result of the **sACN trigger test** (section 5): did the playback
+   follow the slider smoothly, only switch on/off, or do nothing? Which
+   destination worked (multicast, or unicast to 127.0.0.1)?
+2. Which playbacks each fader should control. The default is faders 1–8 →
+   playbacks 1–8.
 
 ## Sources
 
@@ -106,4 +147,6 @@ user interface, which is route 3, but that is a guess.
 * avosupport.de, Titan WebAPI: <https://www.avosupport.de/wiki/webapi/start> and <https://avosupport.de/downloads/webapi/help/index.htm>
 * Avolites Titan API reference v18.0: <https://api.avolites.com/18.0/>
 * Avolites manual, network ports used by Titan: <https://manual.avolites.com/docs/networking/ports-used-by-titan>
+* avosupport.de, Titan triggers (sources, actions, console table): <https://avosupport.de/wiki/external/trigger>
+* Avolites manual, MIDI/DMX triggering: <https://manual.avolites.com/docs/13.0/running-the-show/midi-dmx-or-audio-triggering>
 * OsiMIDI T1 Remote (App Store): <https://apps.apple.com/app/id6449872669>
