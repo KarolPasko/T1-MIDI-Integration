@@ -466,3 +466,11 @@ Code layout:
 
 What is needed to start Stages 2 and 3 is in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
 The Titan Go investigation (Stage 3) is in [docs/TITAN_INTEGRATION.md](docs/TITAN_INTEGRATION.md).
+
+## Credits
+
+Made by **Karol Pasko** · Instagram [@karol.pasko](https://www.instagram.com/karol.pasko/) ·
+[KarolPasko.github.io](https://karolpasko.github.io/)
+
+The app icon (with "Karol Pasko" on it; the smallest sizes show only the pads,
+because the name would be unreadable) is drawn by `assets/make_icon.py`.
