@@ -6,164 +6,173 @@
 <title>APC Titan Bridge</title>
 <style>
   :root {
-    --bg: #15171c; --panel: #1f232b; --panel2: #262b35; --line: #343a47;
-    --text: #e6e8ec; --muted: #8c93a3; --accent: #3d8bfd;
-    --green: #2ecc40; --red: #ff4136; --yellow: #ffdc00; --off: #2c3038;
+    --bg: #16181d; --panel: #20242c; --line: #353b48; --text: #e6e8ec; --muted: #8c93a3;
+    --accent: #3d8bfd; --green: #2ecc40; --red: #ff4136; --yellow: #ffdc00; --off: #2c3038;
     --danger: #c0262d; --sim: #1f5f9e;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text);
-         font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
   button, select, input { font: inherit; color: inherit; }
-  button { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px;
-           padding: 6px 12px; cursor: pointer; }
+  button { background: #2a2f3a; border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; cursor: pointer; }
   button:hover { border-color: var(--accent); }
-  button:disabled { opacity: .45; cursor: default; }
+  button:disabled { opacity: .4; cursor: default; }
   select, input[type=text], input[type=number] {
     background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; }
   input[type=number] { width: 80px; }
+  .field input[type=text] { width: 100%; }
+  #ip.field-ip { width: 110px; }
   label { color: var(--muted); }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .hint { color: var(--muted); font-size: 12px; }
 
-  #status { padding: 12px 18px; font-size: 18px; font-weight: 700; display: flex;
-            align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  #status.off { background: #3a3f4a; }
-  #status.on { background: var(--danger); }
-  #status.sim { background: var(--sim); }
-  #outBtn { font-size: 16px; font-weight: 700; padding: 10px 22px; border-width: 2px; }
-  #status.on #outBtn { background: #fff; color: var(--danger); }
-
-  header.bar { background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 18px; }
-  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
-  .pill.ok { background: #1d4d2a; color: #8ef0a5; }
+  /* top bar: file + output */
+  #top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+         padding: 10px 16px; background: #3a3f4a; }
+  #top.on { background: var(--danger); } #top.sim { background: var(--sim); }
+  #fileName { font-weight: 700; font-size: 16px; }
+  #unsaved { color: #ffcf7a; font-size: 12px; }
+  #statusText { font-weight: 700; }
+  #outBtn { font-weight: 700; padding: 8px 18px; border-width: 2px; }
+  #top.on #outBtn { background: #fff; color: var(--danger); }
+  #devices { padding: 6px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .pill { padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+  .pill.ok { background: #1d4d2a; color: #8ef0a5; } .pill.idle { background: #333; color: var(--muted); }
   .pill.bad { background: #4d1d1d; color: #ff9b9b; }
-  .pill.idle { background: #333; color: var(--muted); }
 
-  main { display: grid; grid-template-columns: minmax(520px, 1fr) 400px; gap: 14px; padding: 14px 18px; }
+  main { display: grid; grid-template-columns: minmax(460px, 1fr) 340px; gap: 14px; padding: 14px 16px; }
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
   .card h2 { margin: 0 0 10px; font-size: 15px; }
+  details { margin-top: 12px; } details summary { cursor: pointer; color: var(--muted); }
 
-  /* The controller picture */
-  #apc { display: grid; grid-template-columns: repeat(8, 1fr) 1.1fr; gap: 7px;
-         max-width: 640px; margin: 0 auto; }
+  /* the controller picture */
+  #apc, .faders { display: grid; grid-template-columns: repeat(8, 1fr) 1.1fr; gap: 6px; max-width: 600px; margin: 0 auto; }
   .pad { aspect-ratio: 1.25; background: var(--off); border-radius: 5px; border: 2px solid transparent;
          position: relative; cursor: pointer; overflow: hidden; }
   .pad .lbl { position: absolute; inset: 2px 3px auto 3px; font-size: 10px; line-height: 1.15;
-              color: rgba(255,255,255,.85); text-shadow: 0 0 3px #000; word-break: break-word; }
-  .pad .mode { position: absolute; right: 3px; bottom: 1px; font-size: 10px; color: rgba(255,255,255,.7);
-               text-shadow: 0 0 3px #000; }
-  .round { border-radius: 50%; aspect-ratio: 1; width: 64%; margin: auto; }
+              color: rgba(255,255,255,.9); text-shadow: 0 0 3px #000; word-break: break-word; }
   .roundwrap { display: flex; align-items: center; justify-content: center; }
-  .shift { background: #444; border-radius: 4px; width: 70%; aspect-ratio: 2; margin: auto; }
-  .pad.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .round { border-radius: 50%; aspect-ratio: 1; width: 62%; }
+  .shift { background: #444; border-radius: 4px; width: 70%; aspect-ratio: 2; }
+  .pad.selected { box-shadow: 0 0 0 2px var(--accent); border-color: var(--accent); }
   .pad.pressed { border-color: #fff; }
   .c-green { background: var(--green); } .c-red { background: var(--red); } .c-yellow { background: var(--yellow); }
   .blink { animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { background: var(--off); } }
-  .faders { display: grid; grid-template-columns: repeat(8, 1fr) 1.1fr; gap: 7px; max-width: 640px;
-            margin: 12px auto 0; }
+  .faders { margin-top: 10px; }
   .fader { cursor: pointer; text-align: center; border: 2px solid transparent; border-radius: 6px; padding: 3px; }
   .fader.selected { border-color: var(--accent); }
-  .track { height: 110px; width: 18px; margin: 0 auto; background: var(--off); border-radius: 4px;
-           position: relative; }
+  .track { height: 90px; width: 16px; margin: 0 auto; background: var(--off); border-radius: 4px; position: relative; }
   .track .phys { position: absolute; left: 0; right: 0; bottom: 0; background: #555c6b; border-radius: 4px; }
   .track .outm { position: absolute; left: -5px; right: -5px; height: 3px; background: var(--green); }
   .fader .t { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .fader .st { font-size: 11px; height: 28px; }
+  .fader .st { font-size: 11px; height: 16px; white-space: nowrap; }
   .st.live { color: var(--green); } .st.wait { color: #ffb347; } .st.offs { color: var(--muted); }
-  .legend { color: var(--muted); font-size: 12px; margin-top: 10px; text-align: center; }
+  .legend { color: var(--muted); font-size: 12px; margin-top: 8px; text-align: center; }
 
-  /* Editor */
-  .field { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 6px; margin: 6px 0; }
-  .hint { color: var(--muted); font-size: 12px; }
-  .warn { color: #ffb347; }
-  #learnBanner { display: none; background: #6b4d00; padding: 8px 18px; font-weight: 600; }
-  #unsaved { display: none; color: #ffb347; font-weight: 600; }
-  #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #7a1d1d;
-           padding: 10px 16px; border-radius: 8px; display: none; max-width: 80%; }
-  #log { height: 140px; overflow: auto; font: 12px/1.35 Consolas, monospace; background: var(--bg);
-         border-radius: 6px; padding: 6px; white-space: pre-wrap; }
+  .field { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 6px; margin: 7px 0; }
+  #lockNote { display: none; color: #ffcf7a; font-size: 12px; margin-bottom: 8px; }
+  #learnBanner { display: none; background: #6b4d00; padding: 8px 16px; font-weight: 600; }
+  #log { height: 130px; overflow: auto; font: 12px/1.35 Consolas, monospace; background: var(--bg);
+         border-radius: 6px; padding: 6px; white-space: pre-wrap; margin-top: 8px; }
   #log .WARNING { color: #ffb347; } #log .ERROR { color: #ff8080; }
-  details summary { cursor: pointer; color: var(--muted); }
-  @media (max-width: 1050px) { main { grid-template-columns: 1fr; } }
+  #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #7a1d1d;
+           padding: 10px 16px; border-radius: 8px; display: none; max-width: 80%; z-index: 20; }
+
+  /* start / load screen */
+  #start { position: fixed; inset: 0; background: rgba(10,11,14,.92); display: none; z-index: 10;
+           align-items: center; justify-content: center; padding: 16px; }
+  #start .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px;
+                width: min(520px, 100%); max-height: 90vh; overflow: auto; }
+  #start h1 { margin: 0 0 4px; font-size: 20px; }
+  #start h3 { margin: 16px 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+  .filebtn { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 9px 12px; }
+  .filebtn .d { display: block; color: var(--muted); font-size: 12px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
-<div id="status" class="off">
-  <span id="statusText">OUTPUT OFF</span>
+
+<div id="start">
+  <div class="box">
+    <h1>APC mini → Titan Go</h1>
+    <div class="hint">Choose a mapping to load.</div>
+    <h3>Your files</h3>
+    <div id="savedList"></div>
+    <h3>Ready-made files</h3>
+    <div id="presetList"></div>
+    <h3>Something else</h3>
+    <div class="row">
+      <button id="importBtn">Open a file from the computer…</button>
+      <button id="newBtn">Start empty</button>
+      <button id="closeStart">Cancel</button>
+    </div>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none">
+    <p class="hint" id="folderHint"></p>
+  </div>
+</div>
+
+<div id="top">
   <span class="row">
-    <label><input type="checkbox" id="simOut"> Simulate only (send nothing)</label>
+    <span id="fileName">No file loaded</span><span id="unsaved"></span>
+    <button id="openBtn">Open</button>
+    <button id="saveBtn">Save</button>
+    <button id="saveAsBtn">Save as…</button>
+  </span>
+  <span class="row">
+    <span id="statusText">OUTPUT OFF</span>
     <button id="outBtn">Switch output ON</button>
   </span>
 </div>
-<div id="learnBanner">LEARN: press a button or move a fader on the APC mini to select it… <button id="learnCancel">Cancel</button></div>
-<header class="bar row">
-  <label>APC mini input</label><select id="inSel"></select>
-  <label>LED output</label><select id="outSel"></select>
-  <button id="refreshBtn">Refresh</button>
+<div id="devices" class="row">
+  <label>APC mini</label><select id="inSel"></select>
+  <label>LEDs</label><select id="outSel"></select>
   <button id="connectBtn">Connect</button>
   <button id="disconnectBtn">Disconnect</button>
+  <button id="refreshBtn">Refresh</button>
   <span id="inPill" class="pill idle">input: off</span>
   <span id="ledPill" class="pill idle">LEDs: off</span>
-  <span id="pktInfo" class="hint"></span>
-</header>
+</div>
+<div id="learnBanner">Press a button or move a fader on the APC mini to select it… <button id="learnCancel">Cancel</button></div>
 
 <main>
-  <section>
-    <div class="card">
-      <div class="row" style="justify-content: space-between">
-        <h2>APC mini</h2>
-        <span class="row"><button id="learnBtn">Learn (press a control)</button></span>
-      </div>
-      <div id="apc"></div>
-      <div class="faders" id="faders"></div>
-      <div class="legend">Click a pad, button or fader to edit it. Colours show what the app is sending
-        to the APC mini's LEDs; they are not read back from Titan.</div>
-    </div>
-    <div class="card" style="margin-top: 14px">
-      <h2>Log</h2>
-      <div id="log"></div>
-    </div>
+  <section class="card">
+    <div id="apc"></div>
+    <div class="faders" id="faders"></div>
+    <div class="legend">Click a pad, button or fader to change it. Colours are what the app sends to the
+      APC mini's lights, not Titan's state.</div>
   </section>
 
   <aside>
     <div class="card">
-      <h2 id="edTitle">Select a control</h2>
+      <div class="row" style="justify-content: space-between">
+        <h2 id="edTitle">Select a control</h2>
+        <button id="learnBtn" title="Select a control by pressing it on the APC mini">Learn</button>
+      </div>
+      <div id="lockNote">Switch output OFF to change mappings.</div>
       <div id="editor"></div>
     </div>
 
     <div class="card" style="margin-top: 14px">
-      <h2>Output settings</h2>
-      <div class="field"><label>sACN universe</label><input type="number" id="universe" min="1" max="63999"></div>
-      <div class="field"><label>Send to</label>
-        <span class="row"><select id="dest"><option value="multicast">Multicast (standard)</option>
-          <option value="unicast">Unicast to IP</option></select>
-          <input type="text" id="ip" style="width: 120px"></span></div>
-      <div class="field"><label>Max output %</label><input type="number" id="maxPct" min="0" max="100"></div>
-      <div class="field"><label>LED feedback</label><input type="checkbox" id="ledFb"></div>
-      <div class="field"><label>Level meters</label>
-        <span><input type="checkbox" id="meters"> <span class="hint">on unused pads above faders 1-8</span></span></div>
-    </div>
-
-    <div class="card" style="margin-top: 14px">
-      <div class="row">
-        <button id="applyBtn">Apply changes</button>
-        <button id="saveBtn">Save</button>
-        <button id="reloadBtn">Reload saved</button>
-        <button id="defaultsBtn">Defaults</button>
-      </div>
-      <p id="unsaved">Changes not applied/saved yet</p>
-      <p class="hint" id="cfgPath"></p>
-      <p class="hint">Settings are locked while output is ON. "On/off" for faders (and the fader on/off
-        buttons) works live.</p>
-      <details><summary>Titan Go setup</summary>
-        <p class="hint">For every fader and every mapped button: in Titan Go open <b>System → Triggers</b>,
-        add a trigger, Type <b>Item</b>, choose the playback, action <b>Set Level</b>, source
-        <b>Streaming ACN</b>, universe and channel as set here. Or turn <b>Learn On</b> in Titan, switch
-        output ON here and use the control once.</p>
-        <p class="hint">Momentary buttons send their ON level while held (flash). Toggle buttons latch.
-        A button sends its OFF level whenever it is not on, so Titan follows it both ways.</p>
+      <details><summary>Output settings</summary>
+        <div class="field"><label>sACN universe</label><input type="number" id="universe" min="1" max="63999"></div>
+        <div class="field"><label>Send to</label>
+          <span class="row"><select id="dest"><option value="multicast">Multicast (standard)</option>
+            <option value="unicast">Unicast to IP</option></select>
+            <input type="text" id="ip" class="field-ip"></span></div>
+        <div class="field"><label>Max output %</label><input type="number" id="maxPct" min="0" max="100"></div>
+        <div class="field"><label>Pad lights</label><input type="checkbox" id="ledFb"></div>
+        <div class="field"><label>Level meters</label>
+          <span><input type="checkbox" id="meters"> <span class="hint">on unused pads above faders</span></span></div>
+        <div class="field"><label>Test mode</label>
+          <span><input type="checkbox" id="simOut"> <span class="hint">calculate levels but send nothing</span></span></div>
       </details>
+      <details><summary>Titan Go setup</summary>
+        <p class="hint">For every fader and mapped button: in Titan Go open <b>System → Triggers</b>, add a trigger,
+        Type <b>Item</b>, pick the playback, action <b>Set Level</b>, source <b>Streaming ACN</b>, and the
+        universe and channel shown here.</p>
+        <p class="hint">Momentary buttons are on while held. Toggle buttons latch: press on, press again off.</p>
+      </details>
+      <details><summary>Log</summary><div id="log"></div></details>
     </div>
   </aside>
 </main>
@@ -172,30 +181,27 @@
 <script>
 "use strict";
 const TOKEN = "__TOKEN__";
-const GRID = [...Array(64).keys()], TRACK = [64,65,66,67,68,69,70,71], SCENE = [82,83,84,85,86,87,88,89], SHIFT = 98;
-const MODES = {
-  unused: "Not used", momentary: "Momentary (on while held)", toggle: "Toggle (press on / press off)",
-  fader_enable: "Fader on/off", output_status: "Output status light",
-};
+const TRACK = [64,65,66,67,68,69,70,71], SCENE = [82,83,84,85,86,87,88,89], SHIFT = 98;
+const MODES = { unused: "Not used", momentary: "Momentary (on while held)", toggle: "Toggle (press on / off)",
+                fader_enable: "Fader on/off", output_status: "Output status light" };
+const SENDING = new Set(["momentary", "toggle"]);
 const GRID_LEDS = [[0,"Off"],[1,"Green"],[2,"Green blink"],[3,"Red"],[4,"Red blink"],[5,"Yellow"],[6,"Yellow blink"]];
-const kind = n => n < 64 ? "grid" : (n <= 71 ? "track" : (n >= 82 && n <= 89 ? "scene" : "shift"));
+const kind = n => n < 64 ? "grid" : n <= 71 ? "track" : (n >= 82 && n <= 89) ? "scene" : "shift";
 const ledOptions = n => kind(n) === "grid" ? GRID_LEDS
   : kind(n) === "track" ? [[0,"Off"],[1,"Red"],[2,"Red blink"]]
-  : kind(n) === "scene" ? [[0,"Off"],[1,"Green"],[2,"Green blink"]] : [[0,"(no light)"]];
+  : kind(n) === "scene" ? [[0,"Off"],[1,"Green"],[2,"Green blink"]] : [];
 const FADER_NAMES = ["Fader 1","Fader 2","Fader 3","Fader 4","Fader 5","Fader 6","Fader 7","Fader 8","Master fader"];
 function describe(n) {
-  if (n < 64) { const row = Math.floor(n / 8), col = n % 8; return `Pad row ${8 - row} col ${col + 1}`; }
-  if (kind(n) === "track") return `Track button ${n - 63}`;
-  if (kind(n) === "scene") return `Scene button ${n - 81}`;
+  if (n < 64) return `Pad row ${8 - Math.floor(n / 8)}, column ${n % 8 + 1}`;
+  if (kind(n) === "track") return `Bottom button ${n - 63}`;
+  if (kind(n) === "scene") return `Right button ${n - 81}`;
   return "Shift";
 }
 
-let S = null;          // last state from the app
-let cfg = null;        // editable copy of the settings
-let dirty = false;     // local edits not applied yet
+let S = null, cfg = null, dirty = false, applyTimer = null, logSeq = 0, autoConnected = false, startForced = false;
 let selected = { type: "button", id: 56 };
-let logSeq = 0;
 const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 async function api(path, body) {
   try {
@@ -215,81 +221,140 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = "none", 6000);
 }
 
-/* ---------- build the controller picture once ---------- */
+/* ---------- start screen ---------- */
+const PRESET_INFO = {
+  "All buttons momentary": "Every pad and button is on while held. Pads red when off, green when on.",
+  "All buttons toggle": "Every pad and button latches on/off. Pads red when off, green when on.",
+  "Faders only (basic)": "Just the 9 faders; the bottom buttons switch faders on/off.",
+};
+function renderStart() {
+  const show = S && (!S.current || startForced);
+  $("start").style.display = show ? "flex" : "none";
+  if (!show) return;
+  const key = JSON.stringify(S.files) + !!S.current;
+  if ($("start").dataset.key === key) return;
+  $("start").dataset.key = key;
+  const btn = f => `<button class="filebtn" data-kind="${f.kind}" data-name="${esc(f.name)}">${esc(f.name)}` +
+    (f.kind === "preset" && PRESET_INFO[f.name] ? `<span class="d">${PRESET_INFO[f.name]}</span>` : "") + "</button>";
+  const saved = S.files.filter(f => f.kind === "saved"), presets = S.files.filter(f => f.kind === "preset");
+  $("savedList").innerHTML = saved.map(btn).join("") || '<div class="hint">None yet. Files you save appear here.</div>';
+  $("presetList").innerHTML = presets.map(btn).join("");
+  document.querySelectorAll("#start .filebtn").forEach(b => b.onclick = () => openFile(b.dataset.kind, b.dataset.name));
+  $("folderHint").textContent = "Your files are kept in " + S.mappings_folder;
+  $("closeStart").style.display = S.current ? "" : "none";
+}
+async function leaveFile() {
+  if (!S.current) return true;
+  if (S.output.enabled) { toast("Switch output OFF before opening another mapping."); return false; }
+  await flushApply();
+  return !(S.unsaved || dirty) || confirm("Your changes are not saved. Open another mapping anyway?");
+}
+async function loaded(j) { if (j.ok) { startForced = false; cfg = null; } }
+async function openFile(kind, name) { if (await leaveFile()) await loaded(await api("open", { kind, name })); }
+$("openBtn").onclick = () => { startForced = true; renderStart(); };
+$("closeStart").onclick = () => { startForced = false; renderStart(); };
+$("newBtn").onclick = async () => { if (await leaveFile()) await loaded(await api("new", {})); };
+$("importBtn").onclick = () => $("importFile").click();
+$("importFile").onchange = async e => {
+  const file = e.target.files[0]; e.target.value = "";
+  if (!file) return;
+  let data;
+  try { data = JSON.parse(await file.text()); } catch (err) { toast("That file is not a mapping file."); return; }
+  if (await leaveFile()) await loaded(await api("import", { config: data, name: file.name.replace(/\.json$/i, "") }));
+};
+
+/* ---------- applying and saving ---------- */
+async function flushApply() {
+  clearTimeout(applyTimer);
+  if (!dirty) return true;
+  const j = await api("settings", { config: cfg });
+  if (j.ok) dirty = false;
+  return j.ok;
+}
+// Edits are applied by themselves shortly after the last change.
+function changed() { dirty = true; clearTimeout(applyTimer); applyTimer = setTimeout(flushApply, 400); render(); }
+$("saveBtn").onclick = async () => { if (await flushApply()) await api("save", {}); };
+$("saveAsBtn").onclick = async () => {
+  const suggestion = S.current && S.current.kind === "saved" ? S.current.name + " copy" : "My mapping";
+  const name = prompt("Save this mapping as:", suggestion);
+  if (!name) return;
+  if (S.files.some(f => f.kind === "saved" && f.name.toLowerCase() === name.trim().toLowerCase())
+      && !confirm(`'${name}' already exists. Replace it?`)) return;
+  if (await flushApply()) await api("save", { name });
+};
+
+/* ---------- the controller picture ---------- */
 const padEls = {}, faderEls = [];
 function makePad(n) {
   const outer = document.createElement("div");
-  let el;
-  if (kind(n) === "grid") { el = outer; el.className = "pad"; }
+  let el = outer;
+  if (kind(n) === "grid") el.className = "pad";
   else {
     outer.className = "roundwrap";
     el = document.createElement("div");
     el.className = "pad " + (n === SHIFT ? "shift" : "round");
     outer.appendChild(el);
   }
-  el.innerHTML = '<span class="lbl"></span><span class="mode"></span>';
+  el.dataset.base = el.className;
+  el.innerHTML = '<span class="lbl"></span>';
   el.title = describe(n);
   el.onclick = () => select({ type: "button", id: n });
   padEls[n] = el;
   return outer;
 }
 function buildApc() {
-  const apc = $("apc");
   for (let r = 7; r >= 0; r--) {
-    for (let c = 0; c < 8; c++) apc.appendChild(makePad(r * 8 + c));
-    apc.appendChild(makePad(SCENE[7 - r]));
+    for (let c = 0; c < 8; c++) $("apc").appendChild(makePad(r * 8 + c));
+    $("apc").appendChild(makePad(SCENE[7 - r]));
   }
-  TRACK.forEach(n => apc.appendChild(makePad(n)));
-  apc.appendChild(makePad(SHIFT));
-  const fz = $("faders");
+  TRACK.forEach(n => $("apc").appendChild(makePad(n)));
+  $("apc").appendChild(makePad(SHIFT));
   FADER_NAMES.forEach((name, i) => {
     const d = document.createElement("div");
     d.className = "fader";
     d.innerHTML = `<div class="t">${name}</div><div class="track"><div class="phys"></div><div class="outm"></div></div>
                    <div class="o">0%</div><div class="st"></div>`;
     d.onclick = () => select({ type: "fader", id: i });
-    fz.appendChild(d); faderEls.push(d);
+    $("faders").appendChild(d); faderEls.push(d);
   });
 }
-
-/* ---------- rendering ---------- */
 function ledClass(n, s) {
   if (!s) return "";
   if (kind(n) === "grid") return ["", "c-green", "c-green blink", "c-red", "c-red blink", "c-yellow", "c-yellow blink"][s] || "";
   const c = kind(n) === "track" ? "c-red" : "c-green";
   return s === 2 ? c + " blink" : c;
 }
-const MODE_TAG = { momentary: "M", toggle: "T", fader_enable: "F", output_status: "O" };
+
 function render() {
   if (!S) return;
-  const out = S.output, on = out.enabled;
-  $("status").className = on ? (out.simulate ? "sim" : "on") : "off";
-  $("statusText").textContent = !on ? "OUTPUT OFF – nothing is sent to Titan Go"
-    : out.simulate ? "SIMULATED OUTPUT – levels are calculated but NOT sent"
-    : `OUTPUT ON – sACN universe ${cfg ? cfg.universe : ""} → ${out.dest}`;
+  const out = S.output, on = out.enabled, cur = S.current;
+  $("top").className = on ? (out.simulate ? "sim" : "on") : "";
+  $("statusText").textContent = !on ? "OUTPUT OFF" : out.simulate ? "TEST MODE – nothing sent"
+    : `OUTPUT ON – universe ${cfg ? cfg.universe : ""}`;
   $("outBtn").textContent = on ? "Switch output OFF" : "Switch output ON";
+  $("outBtn").disabled = !cur;
   $("simOut").checked = out.simulate; $("simOut").disabled = on;
-  $("pktInfo").textContent = on ? `${out.packets} packets sent` : "";
+  $("fileName").textContent = cur ? cur.name : "No file loaded";
+  $("unsaved").textContent = !cur ? "" : (dirty || S.unsaved) ? "● not saved"
+    : cur.kind === "preset" ? "ready-made: use Save as to keep changes" : "";
+  $("saveBtn").disabled = !cur || cur.kind !== "saved";
+  $("saveAsBtn").disabled = !cur;
   $("inPill").textContent = S.midi_in.open ? "input: connected" : "input: off";
   $("inPill").className = "pill " + (S.midi_in.open ? "ok" : "idle");
   $("ledPill").textContent = S.leds.error ? "LEDs: error" : (S.leds.open ? "LEDs: connected" : "LEDs: off");
   $("ledPill").className = "pill " + (S.leds.error ? "bad" : (S.leds.open ? "ok" : "idle"));
   $("learnBanner").style.display = S.learning ? "block" : "none";
-  for (const b of ["applyBtn", "reloadBtn", "defaultsBtn"]) $(b).disabled = on;
-  $("unsaved").style.display = (dirty || S.unsaved) ? "block" : "none";
-  $("unsaved").textContent = dirty ? "Changes not applied yet – click Apply changes" : "Applied but not saved – click Save";
-  $("cfgPath").textContent = "Settings file: " + S.config_path;
+  $("lockNote").style.display = on ? "block" : "none";
+  document.querySelectorAll("#editor input, #editor select, details input, details select")
+    .forEach(el => { if (el.id !== "simOut") el.disabled = on; });
 
   const leds = S.leds.states, pressed = new Set(S.pressed);
   const byNote = {}; (cfg ? cfg.buttons : []).forEach(b => byNote[b.note] = b);
   for (const [n, el] of Object.entries(padEls)) {
     const note = +n, b = byNote[note];
-    const base = el.classList.contains("round") ? "pad round" : el.classList.contains("shift") ? "pad shift" : "pad";
-    el.className = [base, ledClass(note, leds[n] || 0), pressed.has(note) ? "pressed" : "",
+    el.className = [el.dataset.base, ledClass(note, leds[n] || 0), pressed.has(note) ? "pressed" : "",
                     selected.type === "button" && selected.id === note ? "selected" : ""].join(" ");
-    const showLabel = b && b.mode !== "unused" && kind(note) === "grid";
-    el.querySelector(".lbl").textContent = showLabel ? (b.label || "") : "";
-    el.querySelector(".mode").textContent = b && kind(note) === "grid" ? (MODE_TAG[b.mode] || "") : "";
+    el.querySelector(".lbl").textContent = b && b.mode !== "unused" && kind(note) === "grid" ? (b.label || "") : "";
   }
   S.faders.forEach((f, i) => {
     const el = faderEls[i];
@@ -299,150 +364,126 @@ function render() {
     el.querySelector(".o").textContent = Math.round(f.output / 2.55) + "%";
     const st = el.querySelector(".st");
     if (!f.enabled) { st.textContent = "Off"; st.className = "st offs"; }
-    else if (!on) { st.textContent = "Output off"; st.className = "st offs"; }
+    else if (!on) { st.textContent = ""; st.className = "st"; }
     else if (f.picked_up) { st.textContent = "LIVE"; st.className = "st live"; }
     else { st.textContent = `Pickup ${Math.round(f.target / 2.55)}%`; st.className = "st wait"; }
-    if (cfg) el.querySelector(".t").textContent = cfg.faders[i] ? (cfg.faders[i].label || FADER_NAMES[i]) : FADER_NAMES[i];
+    if (cfg && cfg.faders[i]) el.querySelector(".t").textContent = cfg.faders[i].label || FADER_NAMES[i];
   });
 }
 
-function fillSettings() {
-  $("universe").value = cfg.universe;
-  $("dest").value = cfg.unicast_ip ? "unicast" : "multicast";
-  $("ip").value = cfg.unicast_ip || "127.0.0.1";
-  $("maxPct").value = cfg.max_output_percent;
-  $("ledFb").checked = cfg.led_feedback;
-  $("meters").checked = cfg.show_meters;
-}
-
+/* ---------- editor ---------- */
 function usedChannels(except) {
-  const used = new Set(cfg.faders.map(f => f.address));
-  cfg.buttons.forEach(b => { if ((b.mode === "momentary" || b.mode === "toggle") && b !== except) used.add(b.address); });
+  const used = new Set(cfg.faders.filter(f => f !== except).map(f => f.address));
+  cfg.buttons.forEach(b => { if (SENDING.has(b.mode) && b !== except) used.add(b.address); });
   return used;
 }
 function nextFree(except) { const u = usedChannels(except); for (let c = 1; c <= 512; c++) if (!u.has(c)) return c; return 512; }
-
-function changed() { dirty = true; render(); }
-
-function inputRow(label, html, hint) {
-  return `<div class="field"><label>${label}</label><span>${html}${hint ? `<div class="hint">${hint}</div>` : ""}</span></div>`;
-}
-function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+const field = (label, html, hint) =>
+  `<div class="field"><label>${label}</label><span>${html}${hint ? `<div class="hint">${hint}</div>` : ""}</span></div>`;
 
 function renderEditor() {
   const ed = $("editor");
   if (!cfg) { ed.innerHTML = ""; return; }
+  const bind = (id, fn, ev = "oninput") => { if ($(id)) $(id)[ev] = fn; };
   if (selected.type === "fader") {
     const f = cfg.faders[selected.id];
     $("edTitle").textContent = FADER_NAMES[selected.id];
     ed.innerHTML =
-      inputRow("Label", `<input type="text" id="e_label" value="${esc(f.label)}">`, "e.g. the Titan playback name") +
-      inputRow("sACN channel", `<input type="number" id="e_addr" min="1" max="512" value="${f.address}">`) +
-      inputRow("On", `<input type="checkbox" id="e_en" ${f.enabled ? "checked" : ""}>`) +
-      inputRow("Min %", `<input type="number" id="e_min" min="0" max="100" value="${f.min_percent}">`, "level at the bottom") +
-      inputRow("Max %", `<input type="number" id="e_max" min="0" max="100" value="${f.max_percent}">`, "level at the top");
-    $("e_label").oninput = e => { f.label = e.target.value; changed(); };
-    $("e_addr").oninput = e => { f.address = +e.target.value; changed(); };
-    $("e_en").onchange = e => { f.enabled = e.target.checked; changed(); };
-    $("e_min").oninput = e => { f.min_percent = +e.target.value; changed(); };
-    $("e_max").oninput = e => { f.max_percent = +e.target.value; changed(); };
+      field("Name", `<input type="text" id="e_label" value="${esc(f.label)}">`) +
+      field("sACN channel", `<input type="number" id="e_addr" min="1" max="512" value="${f.address}">`) +
+      field("On", `<input type="checkbox" id="e_en" ${f.enabled ? "checked" : ""}>`);
+    bind("e_label", e => { f.label = e.target.value; changed(); });
+    bind("e_addr", e => { f.address = +e.target.value; changed(); });
+    bind("e_en", e => { f.enabled = e.target.checked; changed(); }, "onchange");
+    render();
     return;
   }
   const n = selected.id, b = cfg.buttons.find(x => x.note === n);
-  $("edTitle").textContent = describe(n) + ` (note ${n})`;
-  const modeOpts = Object.entries(MODES)
-    .filter(([m]) => !(n === SHIFT && (m === "output_status")))
+  $("edTitle").textContent = describe(n);
+  const modes = Object.entries(MODES).filter(([m]) => !(n === SHIFT && m === "output_status"))
     .map(([m, t]) => `<option value="${m}" ${b.mode === m ? "selected" : ""}>${t}</option>`).join("");
   const ledSel = (id, val) => `<select id="${id}">` +
     ledOptions(n).map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("") + "</select>";
-  let html = inputRow("What it does", `<select id="e_mode">${modeOpts}</select>`);
-  if (b.mode === "momentary" || b.mode === "toggle") {
-    html += inputRow("Label", `<input type="text" id="e_label" value="${esc(b.label)}">`, "shown on the pad here");
-    html += inputRow("sACN channel", `<span class="row"><input type="number" id="e_addr" min="1" max="512" value="${b.address}">
-              <button id="e_free">Next free</button></span>`, "Titan trigger address for this button");
-    html += inputRow("ON level %", `<input type="number" id="e_on" min="0" max="100" value="${b.on_percent}">`);
-    html += inputRow("OFF level %", `<input type="number" id="e_off" min="0" max="100" value="${b.off_percent}">`);
+  let html = field("Does", `<select id="e_mode">${modes}</select>`);
+  if (SENDING.has(b.mode)) {
+    html += field("Name", `<input type="text" id="e_label" value="${esc(b.label)}">`);
+    html += field("sACN channel", `<input type="number" id="e_addr" min="1" max="512" value="${b.address}">`);
     if (n !== SHIFT) {
-      html += inputRow("Light when ON", ledSel("e_aled", b.active_led), b.mode === "momentary" ? "while held" : "while toggled on");
-      html += inputRow("Light when OFF", ledSel("e_iled", b.idle_led), "choose a colour to show the button is mapped");
+      html += field("Light when off", ledSel("e_iled", b.idle_led));
+      html += field("Light when on", ledSel("e_aled", b.active_led));
     }
+    html += `<details><summary>Levels</summary>
+      ${field("On level %", `<input type="number" id="e_on" min="0" max="100" value="${b.on_percent}">`)}
+      ${field("Off level %", `<input type="number" id="e_off" min="0" max="100" value="${b.off_percent}">`)}</details>`;
   } else if (b.mode === "fader_enable") {
-    html += inputRow("Fader", `<select id="e_fader">` + FADER_NAMES.map((t, i) =>
-              `<option value="${i}" ${b.fader === i ? "selected" : ""}>${t}</option>`).join("") + "</select>",
-              "lit = live, blinking = waiting for pickup / output off, dark = fader off");
-    if (kind(n) === "grid") html += inputRow("Colour when live", ledSel("e_aled", b.active_led));
+    html += field("Fader", `<select id="e_fader">` + FADER_NAMES.map((t, i) =>
+      `<option value="${i}" ${b.fader === i ? "selected" : ""}>${t}</option>`).join("") + "</select>",
+      "lit = live, blinking = waiting for pickup");
   } else if (b.mode === "output_status") {
-    html += `<p class="hint">Lit while output is ON, blinking while OFF. Pressing it does nothing.</p>`;
-    if (kind(n) === "grid") html += inputRow("Colour", ledSel("e_aled", b.active_led));
-  } else {
-    html += `<p class="hint">This button does nothing. Pick what it should do above.</p>`;
+    html += `<p class="hint">Lit while output is ON, blinking while OFF.</p>`;
   }
   ed.innerHTML = html;
-  $("e_mode").onchange = e => {
+  bind("e_mode", e => {
     b.mode = e.target.value;
-    if ((b.mode === "momentary" || b.mode === "toggle") && !(b.address >= 1)) b.address = nextFree(b);
-    if (b.mode === "momentary" || b.mode === "toggle") {
-      if (usedChannels(b).has(b.address)) b.address = nextFree(b);
-    }
+    if (SENDING.has(b.mode) && (!(b.address >= 1) || usedChannels(b).has(b.address))) b.address = nextFree(b);
     changed(); renderEditor();
-  };
-  const bind = (id, fn, ev = "oninput") => { if ($(id)) $(id)[ev] = fn; };
+  }, "onchange");
   bind("e_label", e => { b.label = e.target.value; changed(); });
   bind("e_addr", e => { b.address = +e.target.value; changed(); });
-  bind("e_free", () => { b.address = nextFree(b); changed(); renderEditor(); }, "onclick");
   bind("e_on", e => { b.on_percent = +e.target.value; changed(); });
   bind("e_off", e => { b.off_percent = +e.target.value; changed(); });
   bind("e_aled", e => { b.active_led = +e.target.value; changed(); }, "onchange");
   bind("e_iled", e => { b.idle_led = +e.target.value; changed(); }, "onchange");
   bind("e_fader", e => { b.fader = +e.target.value; changed(); }, "onchange");
+  render();
 }
+function select(sel) { selected = sel; renderEditor(); }
 
-function select(sel) { selected = sel; renderEditor(); render(); }
-
-/* ---------- settings inputs ---------- */
+/* ---------- settings and devices ---------- */
+function fillSettings() {
+  $("universe").value = cfg.universe;
+  $("dest").value = cfg.unicast_ip ? "unicast" : "multicast";
+  $("ip").value = cfg.unicast_ip || "127.0.0.1";
+  $("ip").style.display = cfg.unicast_ip ? "" : "none";
+  $("maxPct").value = cfg.max_output_percent;
+  $("ledFb").checked = cfg.led_feedback;
+  $("meters").checked = cfg.show_meters;
+}
 $("universe").oninput = e => { cfg.universe = +e.target.value; changed(); };
-$("dest").onchange = e => { cfg.unicast_ip = e.target.value === "unicast" ? ($("ip").value || "127.0.0.1") : null; changed(); };
+$("dest").onchange = e => {
+  cfg.unicast_ip = e.target.value === "unicast" ? ($("ip").value || "127.0.0.1") : null;
+  $("ip").style.display = cfg.unicast_ip ? "" : "none"; changed();
+};
 $("ip").oninput = e => { if ($("dest").value === "unicast") { cfg.unicast_ip = e.target.value; changed(); } };
 $("maxPct").oninput = e => { cfg.max_output_percent = +e.target.value; changed(); };
 $("ledFb").onchange = e => { cfg.led_feedback = e.target.checked; changed(); };
 $("meters").onchange = e => { cfg.show_meters = e.target.checked; changed(); };
+$("simOut").onchange = e => api("simulate_output", { on: e.target.checked });
 
-/* ---------- buttons ---------- */
-async function applyIfDirty() {
-  if (!dirty) return true;
-  const j = await api("settings", { config: cfg });
-  if (j.ok) dirty = false;
-  return j.ok;
-}
-$("applyBtn").onclick = applyIfDirty;
-$("saveBtn").onclick = async () => { if (await applyIfDirty()) await api("save", {}); };
-$("reloadBtn").onclick = async () => { if ((await api("reload", {})).ok) { dirty = false; cfg = null; } };
-$("defaultsBtn").onclick = async () => {
-  if (confirm("Replace all mappings with the defaults? (Not saved until you click Save.)")) {
-    if ((await api("defaults", {})).ok) { dirty = false; cfg = null; }
-  }
-};
 $("outBtn").onclick = async () => {
   const turningOn = !S.output.enabled;
-  if (turningOn && !(await applyIfDirty())) return;
+  if (turningOn && !(await flushApply())) return;
   await api("output", { on: turningOn });
 };
-$("simOut").onchange = e => api("simulate_output", { on: e.target.checked });
 $("refreshBtn").onclick = () => api("refresh_ports", {});
 $("connectBtn").onclick = () => api("connect", { input: $("inSel").value, output: $("outSel").value });
 $("disconnectBtn").onclick = () => api("disconnect", {});
 $("learnBtn").onclick = () => api("learn", { on: true });
 $("learnCancel").onclick = () => api("learn", { on: false });
 
+const isApc = p => /apc ?mini/i.test(p) && !/mk ?(2|ii)/i.test(p);
 function fillPorts() {
-  for (const [id, list, guess] of [["inSel", S.ports.inputs], ["outSel", S.ports.outputs]]) {
-    const sel = $(id), cur = sel.value;
-    const key = list.join("|");
+  for (const [id, list] of [["inSel", S.ports.inputs], ["outSel", S.ports.outputs]]) {
+    const sel = $(id), cur = sel.value, key = list.join("|");
     if (sel.dataset.key === key) continue;
     sel.dataset.key = key;
     sel.innerHTML = list.map(p => `<option>${esc(p)}</option>`).join("") || "<option value=''>(none found)</option>";
-    const apc = list.find(p => /apc ?mini/i.test(p) && !/mk ?(2|ii)/i.test(p));
-    sel.value = list.includes(cur) ? cur : (apc || list[0] || "");
+    sel.value = list.includes(cur) ? cur : (list.find(isApc) || list[0] || "");
+  }
+  // Connect to the APC mini by itself the first time it is seen.
+  if (!autoConnected && !S.midi_in.open && !S.leds.open) {
+    const inp = S.ports.inputs.find(isApc), outp = S.ports.outputs.find(isApc);
+    if (inp && outp) { autoConnected = true; api("connect", { input: inp, output: outp }); }
   }
 }
 
@@ -460,7 +501,6 @@ function appendLog(lines) {
 async function poll() {
   const j = await api("state?since=" + logSeq);
   if (j.ok) {
-    const first = !S;
     S = j.state;
     if (!dirty) {
       const fresh = JSON.stringify(S.config);
@@ -471,8 +511,7 @@ async function poll() {
       }
     }
     if (S.learned) select({ type: S.learned[0], id: S.learned[1] });
-    fillPorts(); appendLog(S.log); render();
-    if (first) renderEditor();
+    fillPorts(); appendLog(S.log); renderStart(); render();
   }
   setTimeout(poll, j.ok ? 100 : 1000);
 }
