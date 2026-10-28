@@ -472,4 +472,5 @@ The Titan Go investigation (Stage 3) is in [docs/TITAN_INTEGRATION.md](docs/TITA
 Made by **Karol Pasko** · Instagram [@karol.pasko](https://www.instagram.com/karol.pasko/) ·
 [KarolPasko.github.io](https://karolpasko.github.io/)
 
-The app icon is drawn by `assets/make_icon.py` (run it again after changing it).
+The app icon (with "Karol Pasko" on it; the smallest sizes show only the pads,
+because the name would be unreadable) is drawn by `assets/make_icon.py`.
