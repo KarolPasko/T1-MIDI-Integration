@@ -9,6 +9,7 @@ APP="dist/APC Titan Bridge.app"
 "$PY" -m pip install -r requirements-build.txt
 "$PY" -m PyInstaller --noconfirm --clean --windowed \
   --name "APC Titan Bridge" \
+  --icon assets/icon.icns \
   --osx-bundle-identifier io.github.karolpasko.apc-titan-bridge \
   --add-data "apc_bridge/web:apc_bridge/web" \
   --add-data "apc_bridge/presets:apc_bridge/presets" \
