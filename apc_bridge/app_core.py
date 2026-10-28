@@ -14,9 +14,10 @@ import threading
 import time
 from pathlib import Path
 
-from . import apc_mini, config as config_mod, ports
+from . import apc_mini, ports
 from .bridge import BridgeEngine
 from .config import BridgeConfig, ConfigError
+from .library import PRESET, SAVED, MappingLibrary, check_name
 from .led_output import LedOutput, LedOutputError
 from .midi_input import MidiInputError, MidiInputListener
 from .sacn import SacnError, SacnSender
@@ -70,8 +71,8 @@ class _LogBuffer(logging.Handler):
 
 
 class BridgeCore:
-    def __init__(self, config_path: Path, simulate_midi: bool = False):
-        self.config_path = Path(config_path)
+    def __init__(self, app_folder: Path, simulate_midi: bool = False, presets: Path | None = None):
+        self.library = MappingLibrary(app_folder, presets)
         self.simulate_midi = simulate_midi
         self.lock = threading.RLock()
         self.events: queue.Queue = queue.Queue()
@@ -85,13 +86,9 @@ class BridgeCore:
         self.logbuf = _LogBuffer()
         logging.getLogger().addHandler(self.logbuf)
 
-        try:
-            cfg = config_mod.load(self.config_path)
-            log.info("Settings loaded from %s", self.config_path)
-        except ConfigError as exc:
-            log.warning("%s - starting with default settings", exc)
-            cfg = BridgeConfig()
-        self.engine = BridgeEngine(cfg)
+        # Nothing is loaded until the start screen picks a file.
+        self.engine = BridgeEngine(BridgeConfig())
+        self.current: dict | None = None   # {"kind": "saved"|"preset"|"imported", "name": ...}
         self.unsaved = False
         self.sender: SacnSender | None = None
         self.simulate_output = False
@@ -270,33 +267,56 @@ class BridgeCore:
                     pass
             log.info("Settings applied (not saved yet)")
 
-    def save(self) -> None:
-        with self.lock:
-            try:
-                config_mod.save(self.engine.config, self.config_path)
-            except (OSError, ConfigError) as exc:
-                raise ActionError(f"Could not save: {exc}") from exc
-            self.unsaved = False
-            log.info("Settings saved to %s", self.config_path)
-
-    def reload(self) -> None:
+    def open_file(self, kind: str, name: str) -> None:
         with self.lock:
             if self.engine.output_enabled:
-                raise ActionError("Switch output OFF first.")
+                raise ActionError("Switch output OFF before opening another mapping.")
             try:
-                self.engine.apply_config(config_mod.load(self.config_path))
+                cfg = self.library.load(kind, name)
             except ConfigError as exc:
                 raise ActionError(str(exc)) from exc
+            self.engine.apply_config(cfg)
+            self.current = {"kind": kind, "name": name}
             self.unsaved = False
-            log.info("Saved settings reloaded")
+            log.info("Opened '%s'", name)
 
-    def defaults(self) -> None:
+    def import_config(self, data: dict, name: str) -> None:
+        """A file the user picked from anywhere on the computer."""
+        with self.lock:
+            if self.engine.output_enabled:
+                raise ActionError("Switch output OFF before opening another mapping.")
+            try:
+                cfg = BridgeConfig.from_dict(data)
+            except ConfigError as exc:
+                raise ActionError(str(exc)) from exc
+            self.engine.apply_config(cfg)
+            self.current = {"kind": "imported", "name": name or "Imported"}
+            self.unsaved = True   # it is not in the mappings folder until saved
+            log.info("Imported '%s' (use Save as to keep it)", name)
+
+    def new_file(self) -> None:
         with self.lock:
             if self.engine.output_enabled:
                 raise ActionError("Switch output OFF first.")
             self.engine.apply_config(BridgeConfig())
+            self.current = {"kind": "imported", "name": "New mapping"}
             self.unsaved = True
-            log.info("Default settings loaded (not saved yet)")
+
+    def save(self, name: str | None = None) -> None:
+        """Save to the current file, or under a new name ("Save as")."""
+        with self.lock:
+            if name is None:
+                if not self.current or self.current["kind"] != SAVED:
+                    raise ActionError("Ready-made and imported mappings need 'Save as' with a name of your own.")
+                name = self.current["name"]
+            try:
+                name = check_name(name)
+                path = self.library.save(self.engine.config, name)
+            except (OSError, ConfigError) as exc:
+                raise ActionError(f"Could not save: {exc}") from exc
+            self.current = {"kind": SAVED, "name": name}
+            self.unsaved = False
+            log.info("Saved to %s", path)
 
     def set_learning(self, on: bool) -> None:
         with self.lock:
@@ -326,6 +346,8 @@ class BridgeCore:
                             "enabled": f.mapping.enabled, "target": f.pickup.target} for f in e.faders],
                 "config": e.config.to_dict(),
                 "unsaved": self.unsaved,
-                "config_path": str(self.config_path),
+                "current": self.current,
+                "files": self.library.list(),
+                "mappings_folder": str(self.library.folder),
                 "log": self.logbuf.since(log_since),
             }

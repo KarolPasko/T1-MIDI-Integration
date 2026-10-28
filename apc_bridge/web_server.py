@@ -39,9 +39,10 @@ def make_server(core: BridgeCore, port: int = 0) -> tuple[ThreadingHTTPServer, s
         "output": lambda b: core.set_output(bool(b.get("on"))),
         "simulate_output": lambda b: core.set_simulate_output(bool(b.get("on"))),
         "settings": lambda b: core.apply_settings(b.get("config") or {}),
-        "save": lambda b: core.save(),
-        "reload": lambda b: core.reload(),
-        "defaults": lambda b: core.defaults(),
+        "save": lambda b: core.save(b.get("name") or None),
+        "open": lambda b: core.open_file(str(b.get("kind") or ""), str(b.get("name") or "")),
+        "import": lambda b: core.import_config(b.get("config") or {}, str(b.get("name") or "")),
+        "new": lambda b: core.new_file(),
         "learn": lambda b: core.set_learning(bool(b.get("on"))),
     }
 
