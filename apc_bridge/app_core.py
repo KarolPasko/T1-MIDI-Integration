@@ -17,6 +17,7 @@ from pathlib import Path
 from . import __version__, apc_mini, ports
 from .bridge import BridgeEngine
 from .config import BridgeConfig, ConfigError
+from .hardware_test import HardwareTest
 from .library import PRESET, SAVED, MappingLibrary, check_name
 from .led_output import LedOutput, LedOutputError
 from .midi_input import MidiInputError, MidiInputListener
@@ -98,6 +99,7 @@ class BridgeCore:
         self.apc_lost = False
         self.midi_count = 0          # MIDI messages received, for the activity light
         self.output_on_since: float | None = None
+        self.test: HardwareTest | None = None   # APC mini hardware test, only while output is OFF
         self.dirty = False
         self._last_send = self._last_led = self._last_watchdog = 0.0
         self._stop = threading.Event()
@@ -133,6 +135,14 @@ class BridgeCore:
             self.midi_count += 1
             if ev.channel != 1:
                 continue
+            if self.test is not None:   # during a hardware test, input never reaches the mapping
+                if ev.is_cc:
+                    self.test.fader(ev.number, ev.value)
+                elif ev.is_press:
+                    self.test.press(ev.number)
+                elif ev.is_release:
+                    self.test.release(ev.number)
+                continue
             if ev.is_cc:
                 self.dirty |= self.engine.handle_cc(ev.channel, ev.number, ev.value)
             elif ev.is_press:
@@ -159,9 +169,9 @@ class BridgeCore:
             self._watchdog()
 
     def _update_leds(self) -> None:
-        if not (self.leds.is_open and self.engine.config.led_feedback):
+        if not (self.leds.is_open and (self.engine.config.led_feedback or self.test)):
             return
-        wanted = self.engine.led_states()
+        wanted = self._led_states()
         try:
             for note in apc_mini.LED_NOTES:
                 self.leds.set_led(note, wanted.get(note, 0))
@@ -263,6 +273,8 @@ class BridgeCore:
     def set_output(self, on: bool) -> None:
         with self.lock:
             if on and not self.engine.output_enabled:
+                if self.test is not None:
+                    raise ActionError("Finish the APC mini test before switching output ON.")
                 cfg = self.engine.config
                 try:
                     self.sender = SacnSender(cfg.universe, unicast_ip=cfg.unicast_ip, source_name="APC Bridge",
@@ -367,6 +379,33 @@ class BridgeCore:
                 else:
                     log.info("Blackout released: bring each fader down to zero to pick it up")
 
+    def _led_states(self) -> dict[int, int]:
+        if self.test is not None:
+            return self.test.leds(time.monotonic())[1]
+        return self.engine.led_states()
+
+    def start_test(self, mode: str) -> None:
+        with self.lock:
+            if self.engine.output_enabled:
+                raise ActionError("Switch output OFF before testing the APC mini.")
+            try:
+                self.test = HardwareTest(mode, time.monotonic())
+            except ValueError as exc:
+                raise ActionError(str(exc)) from exc
+            self.engine.set_learning(False)
+            log.info("APC mini test started: %s", mode)
+
+    def stop_test(self) -> None:
+        with self.lock:
+            if self.test is not None:
+                self.test = None
+                if not self.engine.config.led_feedback and self.leds.is_open:
+                    try:
+                        self.leds.restore({})   # pad lights are switched off in the settings
+                    except LedOutputError:
+                        pass
+                log.info("APC mini test finished")
+
     def set_learning(self, on: bool) -> None:
         with self.lock:
             self.engine.set_learning(bool(on))
@@ -388,8 +427,9 @@ class BridgeCore:
                           "error": self.port_list.error},
                 "midi_in": {"open": self.midi_in.is_open, "name": self.midi_in.port_name},
                 "leds": {"open": self.leds.is_open, "name": self.leds.port_name, "error": self.led_error,
-                         "states": {str(n): s for n, s in e.led_states().items()}
-                         if e.config.led_feedback else {}},
+                         "states": {str(n): s for n, s in self._led_states().items()}
+                         if e.config.led_feedback or self.test else {}},
+                "test": self.test.to_dict(time.monotonic()) if self.test else None,
                 "output": {"enabled": e.output_enabled, "simulate": self.simulate_output,
                            "dest": self.sender.dest[0] if self.sender else None,
                            "packets": self.sender.packets_sent if self.sender else 0},

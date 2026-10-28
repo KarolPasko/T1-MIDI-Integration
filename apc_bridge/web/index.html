@@ -116,6 +116,10 @@
   #lostBanner, #bridgeBanner { background: #b3141b; }
   #blackoutBanner { background: #000; border-bottom: 3px solid #fff; font-size: 18px; }
   #blackoutBanner button { margin-left: 12px; font-weight: 700; }
+  #testBar { background: #17406b; }
+  #testBar .ttab.active { background: #fff; color: #17406b; }
+  #testStep { font-size: 16px; margin: 0 8px; }
+  #testStop { margin-left: auto; }
   @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
   @media (max-width: 760px) { #start .box { grid-template-columns: 1fr; } }
 </style>
@@ -184,6 +188,7 @@
   <button id="connectBtn">Connect</button>
   <button id="disconnectBtn">Disconnect</button>
   <button id="refreshBtn">Refresh</button>
+  <button id="testBtn" title="Light show, button test and fader test. Output must be OFF.">Test APC mini</button>
   <span id="inPill" class="pill idle">input: off</span>
   <span id="ledPill" class="pill idle">LEDs: off</span>
 </div>
@@ -193,6 +198,17 @@
 <div id="lostBanner" class="banner">APC mini disconnected – output switched OFF. Plug it back in: it reconnects by itself,
   then switch output ON again.</div>
 <div id="bridgeBanner" class="banner">Lost contact with the bridge. If the window stays like this, restart the app.</div>
+<div id="testBar" class="banner">
+  <span class="row">
+    <span>APC mini test:</span>
+    <button class="ttab" data-mode="lights">Light show</button>
+    <button class="ttab" data-mode="buttons">Button test</button>
+    <button class="ttab" data-mode="faders">Fader test</button>
+    <span id="testStep"></span>
+    <button id="testStop">Finish test</button>
+  </span>
+  <div id="testHelp" class="hint" style="color:#cfe0ff; margin-top: 4px"></div>
+</div>
 <div id="learnBanner">Press a button or move a fader on the APC mini to select it… <button id="learnCancel">Cancel</button></div>
 
 <main>
@@ -226,12 +242,6 @@
           <span><input type="checkbox" id="meters"> <span class="hint">on unused pads above faders</span></span></div>
         <div class="field"><label>Test mode</label>
           <span><input type="checkbox" id="simOut"> <span class="hint">calculate levels but send nothing</span></span></div>
-      </details>
-      <details><summary>Titan Go setup</summary>
-        <p class="hint">For every fader and mapped button: in Titan Go open <b>System → Triggers</b>, add a trigger,
-        Type <b>Item</b>, pick the playback, action <b>Set Level</b>, source <b>Streaming ACN</b>, and the
-        universe and channel shown here.</p>
-        <p class="hint">Momentary buttons are on while held. Toggle buttons latch: press on, press again off.</p>
       </details>
       <details><summary>Log</summary><div id="log"></div></details>
     </div>
@@ -404,11 +414,18 @@ function render() {
   $("blackoutBanner").style.display = S.blackout ? "block" : "none";
   $("blackoutBtn").disabled = !cur || S.blackout;
   $("lostBanner").style.display = S.apc_lost ? "block" : "none";
+  $("testBar").style.display = S.test ? "block" : "none";
+  $("testBtn").disabled = on || !!S.test;
+  if (S.test) {
+    $("testStep").textContent = S.test.step;
+    document.querySelectorAll(".ttab").forEach(b => b.classList.toggle("active", b.dataset.mode === S.test.mode));
+    $("testHelp").textContent = TEST_HELP[S.test.mode];
+  }
   $("top").className = on ? (out.simulate ? "sim" : "on") : "";
   $("statusText").textContent = !on ? "OUTPUT OFF" : out.simulate ? "TEST MODE – nothing sent"
     : `OUTPUT ON – universe ${cfg ? cfg.universe : ""}`;
   $("outBtn").textContent = on ? "Switch output OFF" : "Switch output ON";
-  $("outBtn").disabled = !cur;
+  $("outBtn").disabled = !cur || (!!S.test && !on);
   $("simOut").checked = out.simulate; $("simOut").disabled = on;
   $("fileName").textContent = cur ? cur.name : "No file loaded";
   $("unsaved").textContent = !cur ? "" : (dirty || S.unsaved) ? "● not saved"
@@ -436,11 +453,16 @@ function render() {
   S.faders.forEach((f, i) => {
     const el = faderEls[i];
     el.className = "fader" + (selected.type === "fader" && selected.id === i ? " selected" : "");
-    el.querySelector(".phys").style.height = f.physical == null ? "0" : (f.physical / 127 * 100) + "%";
+    const tf = S.test && S.test.faders[i], phys = tf ? tf.value : f.physical;
+    el.querySelector(".phys").style.height = phys == null ? "0" : (phys / 127 * 100) + "%";
     el.querySelector(".outm").style.bottom = (f.output / 255 * 100) + "%";
     el.querySelector(".o").textContent = Math.round(f.output / 2.55) + "%";
     const st = el.querySelector(".st");
-    if (!f.enabled) { st.textContent = "Off"; st.className = "st offs"; }
+    if (S.test && S.test.mode === "faders") {
+      st.textContent = tf.low && tf.high ? "✓ OK" : (tf.low ? "" : "↓ ") + (tf.high ? "" : "↑");
+      st.className = "st " + (tf.low && tf.high ? "live" : "wait");
+    }
+    else if (!f.enabled) { st.textContent = "Off"; st.className = "st offs"; }
     else if (!on) { st.textContent = ""; st.className = "st"; }
     else if (f.picked_up) { st.textContent = "LIVE"; st.className = "st live"; }
     else { st.textContent = `Pickup ${Math.round(f.target / 2.55)}%`; st.className = "st wait"; }
@@ -555,6 +577,14 @@ $("disconnectBtn").onclick = () => api("disconnect", {});
 $("learnBtn").onclick = () => api("learn", { on: true });
 $("learnCancel").onclick = () => api("learn", { on: false });
 $("blackoutBtn").onclick = () => api("blackout", { on: true });
+const TEST_HELP = {
+  lights: "Watch the APC mini: red, green, yellow, everything flashing, then moving diagonal colours. It loops.",
+  buttons: "Press every pad and button. Each one lights when pressed (yellow / blinking while held). Shift has no light.",
+  faders: "Push each fader all the way up and all the way down. Its column shows the level; the button under it lights when done.",
+};
+$("testBtn").onclick = () => api("test", { mode: "lights" });
+document.querySelectorAll(".ttab").forEach(b => b.onclick = () => api("test", { mode: b.dataset.mode }));
+$("testStop").onclick = () => api("test_stop", {});
 $("releaseBtn").onclick = () => api("blackout", { on: false });
 // Esc = blackout, from anywhere in the window. Releasing needs the button, so it can't happen by accident.
 document.addEventListener("keydown", e => {

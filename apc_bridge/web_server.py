@@ -45,6 +45,8 @@ def make_server(core: BridgeCore, port: int = 0) -> tuple[ThreadingHTTPServer, s
         "new": lambda b: core.new_file(),
         "learn": lambda b: core.set_learning(bool(b.get("on"))),
         "blackout": lambda b: core.set_blackout(bool(b.get("on"))),
+        "test": lambda b: core.start_test(str(b.get("mode") or "")),
+        "test_stop": lambda b: core.stop_test(),
     }
 
     class Handler(BaseHTTPRequestHandler):
