@@ -2,7 +2,7 @@
 
 import sys
 
-from apc_bridge.bridge_gui import main
+from apc_bridge.app import main
 
 if __name__ == "__main__":
     sys.exit(main())

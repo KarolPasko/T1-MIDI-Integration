@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APC Titan Bridge</title>
+<style>
+  :root {
+    --bg: #15171c; --panel: #1f232b; --panel2: #262b35; --line: #343a47;
+    --text: #e6e8ec; --muted: #8c93a3; --accent: #3d8bfd;
+    --green: #2ecc40; --red: #ff4136; --yellow: #ffdc00; --off: #2c3038;
+    --danger: #c0262d; --sim: #1f5f9e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.4 "Segoe UI", system-ui, sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+  button { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px;
+           padding: 6px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  select, input[type=text], input[type=number] {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; }
+  input[type=number] { width: 80px; }
+  label { color: var(--muted); }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  #status { padding: 12px 18px; font-size: 18px; font-weight: 700; display: flex;
+            align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  #status.off { background: #3a3f4a; }
+  #status.on { background: var(--danger); }
+  #status.sim { background: var(--sim); }
+  #outBtn { font-size: 16px; font-weight: 700; padding: 10px 22px; border-width: 2px; }
+  #status.on #outBtn { background: #fff; color: var(--danger); }
+
+  header.bar { background: var(--panel); border-bottom: 1px solid var(--line); padding: 8px 18px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; }
+  .pill.ok { background: #1d4d2a; color: #8ef0a5; }
+  .pill.bad { background: #4d1d1d; color: #ff9b9b; }
+  .pill.idle { background: #333; color: var(--muted); }
+
+  main { display: grid; grid-template-columns: minmax(520px, 1fr) 400px; gap: 14px; padding: 14px 18px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .card h2 { margin: 0 0 10px; font-size: 15px; }
+
+  /* The controller picture */
+  #apc { display: grid; grid-template-columns: repeat(8, 1fr) 1.1fr; gap: 7px;
+         max-width: 640px; margin: 0 auto; }
+  .pad { aspect-ratio: 1.25; background: var(--off); border-radius: 5px; border: 2px solid transparent;
+         position: relative; cursor: pointer; overflow: hidden; }
+  .pad .lbl { position: absolute; inset: 2px 3px auto 3px; font-size: 10px; line-height: 1.15;
+              color: rgba(255,255,255,.85); text-shadow: 0 0 3px #000; word-break: break-word; }
+  .pad .mode { position: absolute; right: 3px; bottom: 1px; font-size: 10px; color: rgba(255,255,255,.7);
+               text-shadow: 0 0 3px #000; }
+  .round { border-radius: 50%; aspect-ratio: 1; width: 64%; margin: auto; }
+  .roundwrap { display: flex; align-items: center; justify-content: center; }
+  .shift { background: #444; border-radius: 4px; width: 70%; aspect-ratio: 2; margin: auto; }
+  .pad.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .pad.pressed { border-color: #fff; }
+  .c-green { background: var(--green); } .c-red { background: var(--red); } .c-yellow { background: var(--yellow); }
+  .blink { animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { background: var(--off); } }
+  .faders { display: grid; grid-template-columns: repeat(8, 1fr) 1.1fr; gap: 7px; max-width: 640px;
+            margin: 12px auto 0; }
+  .fader { cursor: pointer; text-align: center; border: 2px solid transparent; border-radius: 6px; padding: 3px; }
+  .fader.selected { border-color: var(--accent); }
+  .track { height: 110px; width: 18px; margin: 0 auto; background: var(--off); border-radius: 4px;
+           position: relative; }
+  .track .phys { position: absolute; left: 0; right: 0; bottom: 0; background: #555c6b; border-radius: 4px; }
+  .track .outm { position: absolute; left: -5px; right: -5px; height: 3px; background: var(--green); }
+  .fader .t { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fader .st { font-size: 11px; height: 28px; }
+  .st.live { color: var(--green); } .st.wait { color: #ffb347; } .st.offs { color: var(--muted); }
+  .legend { color: var(--muted); font-size: 12px; margin-top: 10px; text-align: center; }
+
+  /* Editor */
+  .field { display: grid; grid-template-columns: 130px 1fr; align-items: center; gap: 6px; margin: 6px 0; }
+  .hint { color: var(--muted); font-size: 12px; }
+  .warn { color: #ffb347; }
+  #learnBanner { display: none; background: #6b4d00; padding: 8px 18px; font-weight: 600; }
+  #unsaved { display: none; color: #ffb347; font-weight: 600; }
+  #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #7a1d1d;
+           padding: 10px 16px; border-radius: 8px; display: none; max-width: 80%; }
+  #log { height: 140px; overflow: auto; font: 12px/1.35 Consolas, monospace; background: var(--bg);
+         border-radius: 6px; padding: 6px; white-space: pre-wrap; }
+  #log .WARNING { color: #ffb347; } #log .ERROR { color: #ff8080; }
+  details summary { cursor: pointer; color: var(--muted); }
+  @media (max-width: 1050px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="status" class="off">
+  <span id="statusText">OUTPUT OFF</span>
+  <span class="row">
+    <label><input type="checkbox" id="simOut"> Simulate only (send nothing)</label>
+    <button id="outBtn">Switch output ON</button>
+  </span>
+</div>
+<div id="learnBanner">LEARN: press a button or move a fader on the APC mini to select it… <button id="learnCancel">Cancel</button></div>
+<header class="bar row">
+  <label>APC mini input</label><select id="inSel"></select>
+  <label>LED output</label><select id="outSel"></select>
+  <button id="refreshBtn">Refresh</button>
+  <button id="connectBtn">Connect</button>
+  <button id="disconnectBtn">Disconnect</button>
+  <span id="inPill" class="pill idle">input: off</span>
+  <span id="ledPill" class="pill idle">LEDs: off</span>
+  <span id="pktInfo" class="hint"></span>
+</header>
+
+<main>
+  <section>
+    <div class="card">
+      <div class="row" style="justify-content: space-between">
+        <h2>APC mini</h2>
+        <span class="row"><button id="learnBtn">Learn (press a control)</button></span>
+      </div>
+      <div id="apc"></div>
+      <div class="faders" id="faders"></div>
+      <div class="legend">Click a pad, button or fader to edit it. Colours show what the app is sending
+        to the APC mini's LEDs; they are not read back from Titan.</div>
+    </div>
+    <div class="card" style="margin-top: 14px">
+      <h2>Log</h2>
+      <div id="log"></div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h2 id="edTitle">Select a control</h2>
+      <div id="editor"></div>
+    </div>
+
+    <div class="card" style="margin-top: 14px">
+      <h2>Output settings</h2>
+      <div class="field"><label>sACN universe</label><input type="number" id="universe" min="1" max="63999"></div>
+      <div class="field"><label>Send to</label>
+        <span class="row"><select id="dest"><option value="multicast">Multicast (standard)</option>
+          <option value="unicast">Unicast to IP</option></select>
+          <input type="text" id="ip" style="width: 120px"></span></div>
+      <div class="field"><label>Max output %</label><input type="number" id="maxPct" min="0" max="100"></div>
+      <div class="field"><label>LED feedback</label><input type="checkbox" id="ledFb"></div>
+      <div class="field"><label>Level meters</label>
+        <span><input type="checkbox" id="meters"> <span class="hint">on unused pads above faders 1-8</span></span></div>
+    </div>
+
+    <div class="card" style="margin-top: 14px">
+      <div class="row">
+        <button id="applyBtn">Apply changes</button>
+        <button id="saveBtn">Save</button>
+        <button id="reloadBtn">Reload saved</button>
+        <button id="defaultsBtn">Defaults</button>
+      </div>
+      <p id="unsaved">Changes not applied/saved yet</p>
+      <p class="hint" id="cfgPath"></p>
+      <p class="hint">Settings are locked while output is ON. "On/off" for faders (and the fader on/off
+        buttons) works live.</p>
+      <details><summary>Titan Go setup</summary>
+        <p class="hint">For every fader and every mapped button: in Titan Go open <b>System → Triggers</b>,
+        add a trigger, Type <b>Item</b>, choose the playback, action <b>Set Level</b>, source
+        <b>Streaming ACN</b>, universe and channel as set here. Or turn <b>Learn On</b> in Titan, switch
+        output ON here and use the control once.</p>
+        <p class="hint">Momentary buttons send their ON level while held (flash). Toggle buttons latch.
+        A button sends its OFF level whenever it is not on, so Titan follows it both ways.</p>
+      </details>
+    </div>
+  </aside>
+</main>
+<div id="toast"></div>
+
+<script>
+"use strict";
+const TOKEN = "__TOKEN__";
+const GRID = [...Array(64).keys()], TRACK = [64,65,66,67,68,69,70,71], SCENE = [82,83,84,85,86,87,88,89], SHIFT = 98;
+const MODES = {
+  unused: "Not used", momentary: "Momentary (on while held)", toggle: "Toggle (press on / press off)",
+  fader_enable: "Fader on/off", output_status: "Output status light",
+};
+const GRID_LEDS = [[0,"Off"],[1,"Green"],[2,"Green blink"],[3,"Red"],[4,"Red blink"],[5,"Yellow"],[6,"Yellow blink"]];
+const kind = n => n < 64 ? "grid" : (n <= 71 ? "track" : (n >= 82 && n <= 89 ? "scene" : "shift"));
+const ledOptions = n => kind(n) === "grid" ? GRID_LEDS
+  : kind(n) === "track" ? [[0,"Off"],[1,"Red"],[2,"Red blink"]]
+  : kind(n) === "scene" ? [[0,"Off"],[1,"Green"],[2,"Green blink"]] : [[0,"(no light)"]];
+const FADER_NAMES = ["Fader 1","Fader 2","Fader 3","Fader 4","Fader 5","Fader 6","Fader 7","Fader 8","Master fader"];
+function describe(n) {
+  if (n < 64) { const row = Math.floor(n / 8), col = n % 8; return `Pad row ${8 - row} col ${col + 1}`; }
+  if (kind(n) === "track") return `Track button ${n - 63}`;
+  if (kind(n) === "scene") return `Scene button ${n - 81}`;
+  return "Shift";
+}
+
+let S = null;          // last state from the app
+let cfg = null;        // editable copy of the settings
+let dirty = false;     // local edits not applied yet
+let selected = { type: "button", id: 56 };
+let logSeq = 0;
+const $ = id => document.getElementById(id);
+
+async function api(path, body) {
+  try {
+    const r = await fetch("/api/" + path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: { "X-Bridge-Token": TOKEN, "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const j = await r.json();
+    if (!j.ok) toast(j.error || "Something went wrong");
+    return j;
+  } catch (e) { toast("Lost contact with the bridge: " + e); return { ok: false }; }
+}
+let toastTimer;
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.style.display = "block";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = "none", 6000);
+}
+
+/* ---------- build the controller picture once ---------- */
+const padEls = {}, faderEls = [];
+function makePad(n) {
+  const outer = document.createElement("div");
+  let el;
+  if (kind(n) === "grid") { el = outer; el.className = "pad"; }
+  else {
+    outer.className = "roundwrap";
+    el = document.createElement("div");
+    el.className = "pad " + (n === SHIFT ? "shift" : "round");
+    outer.appendChild(el);
+  }
+  el.innerHTML = '<span class="lbl"></span><span class="mode"></span>';
+  el.title = describe(n);
+  el.onclick = () => select({ type: "button", id: n });
+  padEls[n] = el;
+  return outer;
+}
+function buildApc() {
+  const apc = $("apc");
+  for (let r = 7; r >= 0; r--) {
+    for (let c = 0; c < 8; c++) apc.appendChild(makePad(r * 8 + c));
+    apc.appendChild(makePad(SCENE[7 - r]));
+  }
+  TRACK.forEach(n => apc.appendChild(makePad(n)));
+  apc.appendChild(makePad(SHIFT));
+  const fz = $("faders");
+  FADER_NAMES.forEach((name, i) => {
+    const d = document.createElement("div");
+    d.className = "fader";
+    d.innerHTML = `<div class="t">${name}</div><div class="track"><div class="phys"></div><div class="outm"></div></div>
+                   <div class="o">0%</div><div class="st"></div>`;
+    d.onclick = () => select({ type: "fader", id: i });
+    fz.appendChild(d); faderEls.push(d);
+  });
+}
+
+/* ---------- rendering ---------- */
+function ledClass(n, s) {
+  if (!s) return "";
+  if (kind(n) === "grid") return ["", "c-green", "c-green blink", "c-red", "c-red blink", "c-yellow", "c-yellow blink"][s] || "";
+  const c = kind(n) === "track" ? "c-red" : "c-green";
+  return s === 2 ? c + " blink" : c;
+}
+const MODE_TAG = { momentary: "M", toggle: "T", fader_enable: "F", output_status: "O" };
+function render() {
+  if (!S) return;
+  const out = S.output, on = out.enabled;
+  $("status").className = on ? (out.simulate ? "sim" : "on") : "off";
+  $("statusText").textContent = !on ? "OUTPUT OFF – nothing is sent to Titan Go"
+    : out.simulate ? "SIMULATED OUTPUT – levels are calculated but NOT sent"
+    : `OUTPUT ON – sACN universe ${cfg ? cfg.universe : ""} → ${out.dest}`;
+  $("outBtn").textContent = on ? "Switch output OFF" : "Switch output ON";
+  $("simOut").checked = out.simulate; $("simOut").disabled = on;
+  $("pktInfo").textContent = on ? `${out.packets} packets sent` : "";
+  $("inPill").textContent = S.midi_in.open ? "input: connected" : "input: off";
+  $("inPill").className = "pill " + (S.midi_in.open ? "ok" : "idle");
+  $("ledPill").textContent = S.leds.error ? "LEDs: error" : (S.leds.open ? "LEDs: connected" : "LEDs: off");
+  $("ledPill").className = "pill " + (S.leds.error ? "bad" : (S.leds.open ? "ok" : "idle"));
+  $("learnBanner").style.display = S.learning ? "block" : "none";
+  for (const b of ["applyBtn", "reloadBtn", "defaultsBtn"]) $(b).disabled = on;
+  $("unsaved").style.display = (dirty || S.unsaved) ? "block" : "none";
+  $("unsaved").textContent = dirty ? "Changes not applied yet – click Apply changes" : "Applied but not saved – click Save";
+  $("cfgPath").textContent = "Settings file: " + S.config_path;
+
+  const leds = S.leds.states, pressed = new Set(S.pressed);
+  const byNote = {}; (cfg ? cfg.buttons : []).forEach(b => byNote[b.note] = b);
+  for (const [n, el] of Object.entries(padEls)) {
+    const note = +n, b = byNote[note];
+    const base = el.classList.contains("round") ? "pad round" : el.classList.contains("shift") ? "pad shift" : "pad";
+    el.className = [base, ledClass(note, leds[n] || 0), pressed.has(note) ? "pressed" : "",
+                    selected.type === "button" && selected.id === note ? "selected" : ""].join(" ");
+    const showLabel = b && b.mode !== "unused" && kind(note) === "grid";
+    el.querySelector(".lbl").textContent = showLabel ? (b.label || "") : "";
+    el.querySelector(".mode").textContent = b && kind(note) === "grid" ? (MODE_TAG[b.mode] || "") : "";
+  }
+  S.faders.forEach((f, i) => {
+    const el = faderEls[i];
+    el.className = "fader" + (selected.type === "fader" && selected.id === i ? " selected" : "");
+    el.querySelector(".phys").style.height = f.physical == null ? "0" : (f.physical / 127 * 100) + "%";
+    el.querySelector(".outm").style.bottom = (f.output / 255 * 100) + "%";
+    el.querySelector(".o").textContent = Math.round(f.output / 2.55) + "%";
+    const st = el.querySelector(".st");
+    if (!f.enabled) { st.textContent = "Off"; st.className = "st offs"; }
+    else if (!on) { st.textContent = "Output off"; st.className = "st offs"; }
+    else if (f.picked_up) { st.textContent = "LIVE"; st.className = "st live"; }
+    else { st.textContent = `Pickup ${Math.round(f.target / 2.55)}%`; st.className = "st wait"; }
+    if (cfg) el.querySelector(".t").textContent = cfg.faders[i] ? (cfg.faders[i].label || FADER_NAMES[i]) : FADER_NAMES[i];
+  });
+}
+
+function fillSettings() {
+  $("universe").value = cfg.universe;
+  $("dest").value = cfg.unicast_ip ? "unicast" : "multicast";
+  $("ip").value = cfg.unicast_ip || "127.0.0.1";
+  $("maxPct").value = cfg.max_output_percent;
+  $("ledFb").checked = cfg.led_feedback;
+  $("meters").checked = cfg.show_meters;
+}
+
+function usedChannels(except) {
+  const used = new Set(cfg.faders.map(f => f.address));
+  cfg.buttons.forEach(b => { if ((b.mode === "momentary" || b.mode === "toggle") && b !== except) used.add(b.address); });
+  return used;
+}
+function nextFree(except) { const u = usedChannels(except); for (let c = 1; c <= 512; c++) if (!u.has(c)) return c; return 512; }
+
+function changed() { dirty = true; render(); }
+
+function inputRow(label, html, hint) {
+  return `<div class="field"><label>${label}</label><span>${html}${hint ? `<div class="hint">${hint}</div>` : ""}</span></div>`;
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+function renderEditor() {
+  const ed = $("editor");
+  if (!cfg) { ed.innerHTML = ""; return; }
+  if (selected.type === "fader") {
+    const f = cfg.faders[selected.id];
+    $("edTitle").textContent = FADER_NAMES[selected.id];
+    ed.innerHTML =
+      inputRow("Label", `<input type="text" id="e_label" value="${esc(f.label)}">`, "e.g. the Titan playback name") +
+      inputRow("sACN channel", `<input type="number" id="e_addr" min="1" max="512" value="${f.address}">`) +
+      inputRow("On", `<input type="checkbox" id="e_en" ${f.enabled ? "checked" : ""}>`) +
+      inputRow("Min %", `<input type="number" id="e_min" min="0" max="100" value="${f.min_percent}">`, "level at the bottom") +
+      inputRow("Max %", `<input type="number" id="e_max" min="0" max="100" value="${f.max_percent}">`, "level at the top");
+    $("e_label").oninput = e => { f.label = e.target.value; changed(); };
+    $("e_addr").oninput = e => { f.address = +e.target.value; changed(); };
+    $("e_en").onchange = e => { f.enabled = e.target.checked; changed(); };
+    $("e_min").oninput = e => { f.min_percent = +e.target.value; changed(); };
+    $("e_max").oninput = e => { f.max_percent = +e.target.value; changed(); };
+    return;
+  }
+  const n = selected.id, b = cfg.buttons.find(x => x.note === n);
+  $("edTitle").textContent = describe(n) + ` (note ${n})`;
+  const modeOpts = Object.entries(MODES)
+    .filter(([m]) => !(n === SHIFT && (m === "output_status")))
+    .map(([m, t]) => `<option value="${m}" ${b.mode === m ? "selected" : ""}>${t}</option>`).join("");
+  const ledSel = (id, val) => `<select id="${id}">` +
+    ledOptions(n).map(([v, t]) => `<option value="${v}" ${val === v ? "selected" : ""}>${t}</option>`).join("") + "</select>";
+  let html = inputRow("What it does", `<select id="e_mode">${modeOpts}</select>`);
+  if (b.mode === "momentary" || b.mode === "toggle") {
+    html += inputRow("Label", `<input type="text" id="e_label" value="${esc(b.label)}">`, "shown on the pad here");
+    html += inputRow("sACN channel", `<span class="row"><input type="number" id="e_addr" min="1" max="512" value="${b.address}">
+              <button id="e_free">Next free</button></span>`, "Titan trigger address for this button");
+    html += inputRow("ON level %", `<input type="number" id="e_on" min="0" max="100" value="${b.on_percent}">`);
+    html += inputRow("OFF level %", `<input type="number" id="e_off" min="0" max="100" value="${b.off_percent}">`);
+    if (n !== SHIFT) {
+      html += inputRow("Light when ON", ledSel("e_aled", b.active_led), b.mode === "momentary" ? "while held" : "while toggled on");
+      html += inputRow("Light when OFF", ledSel("e_iled", b.idle_led), "choose a colour to show the button is mapped");
+    }
+  } else if (b.mode === "fader_enable") {
+    html += inputRow("Fader", `<select id="e_fader">` + FADER_NAMES.map((t, i) =>
+              `<option value="${i}" ${b.fader === i ? "selected" : ""}>${t}</option>`).join("") + "</select>",
+              "lit = live, blinking = waiting for pickup / output off, dark = fader off");
+    if (kind(n) === "grid") html += inputRow("Colour when live", ledSel("e_aled", b.active_led));
+  } else if (b.mode === "output_status") {
+    html += `<p class="hint">Lit while output is ON, blinking while OFF. Pressing it does nothing.</p>`;
+    if (kind(n) === "grid") html += inputRow("Colour", ledSel("e_aled", b.active_led));
+  } else {
+    html += `<p class="hint">This button does nothing. Pick what it should do above.</p>`;
+  }
+  ed.innerHTML = html;
+  $("e_mode").onchange = e => {
+    b.mode = e.target.value;
+    if ((b.mode === "momentary" || b.mode === "toggle") && !(b.address >= 1)) b.address = nextFree(b);
+    if (b.mode === "momentary" || b.mode === "toggle") {
+      if (usedChannels(b).has(b.address)) b.address = nextFree(b);
+    }
+    changed(); renderEditor();
+  };
+  const bind = (id, fn, ev = "oninput") => { if ($(id)) $(id)[ev] = fn; };
+  bind("e_label", e => { b.label = e.target.value; changed(); });
+  bind("e_addr", e => { b.address = +e.target.value; changed(); });
+  bind("e_free", () => { b.address = nextFree(b); changed(); renderEditor(); }, "onclick");
+  bind("e_on", e => { b.on_percent = +e.target.value; changed(); });
+  bind("e_off", e => { b.off_percent = +e.target.value; changed(); });
+  bind("e_aled", e => { b.active_led = +e.target.value; changed(); }, "onchange");
+  bind("e_iled", e => { b.idle_led = +e.target.value; changed(); }, "onchange");
+  bind("e_fader", e => { b.fader = +e.target.value; changed(); }, "onchange");
+}
+
+function select(sel) { selected = sel; renderEditor(); render(); }
+
+/* ---------- settings inputs ---------- */
+$("universe").oninput = e => { cfg.universe = +e.target.value; changed(); };
+$("dest").onchange = e => { cfg.unicast_ip = e.target.value === "unicast" ? ($("ip").value || "127.0.0.1") : null; changed(); };
+$("ip").oninput = e => { if ($("dest").value === "unicast") { cfg.unicast_ip = e.target.value; changed(); } };
+$("maxPct").oninput = e => { cfg.max_output_percent = +e.target.value; changed(); };
+$("ledFb").onchange = e => { cfg.led_feedback = e.target.checked; changed(); };
+$("meters").onchange = e => { cfg.show_meters = e.target.checked; changed(); };
+
+/* ---------- buttons ---------- */
+async function applyIfDirty() {
+  if (!dirty) return true;
+  const j = await api("settings", { config: cfg });
+  if (j.ok) dirty = false;
+  return j.ok;
+}
+$("applyBtn").onclick = applyIfDirty;
+$("saveBtn").onclick = async () => { if (await applyIfDirty()) await api("save", {}); };
+$("reloadBtn").onclick = async () => { if ((await api("reload", {})).ok) { dirty = false; cfg = null; } };
+$("defaultsBtn").onclick = async () => {
+  if (confirm("Replace all mappings with the defaults? (Not saved until you click Save.)")) {
+    if ((await api("defaults", {})).ok) { dirty = false; cfg = null; }
+  }
+};
+$("outBtn").onclick = async () => {
+  const turningOn = !S.output.enabled;
+  if (turningOn && !(await applyIfDirty())) return;
+  await api("output", { on: turningOn });
+};
+$("simOut").onchange = e => api("simulate_output", { on: e.target.checked });
+$("refreshBtn").onclick = () => api("refresh_ports", {});
+$("connectBtn").onclick = () => api("connect", { input: $("inSel").value, output: $("outSel").value });
+$("disconnectBtn").onclick = () => api("disconnect", {});
+$("learnBtn").onclick = () => api("learn", { on: true });
+$("learnCancel").onclick = () => api("learn", { on: false });
+
+function fillPorts() {
+  for (const [id, list, guess] of [["inSel", S.ports.inputs], ["outSel", S.ports.outputs]]) {
+    const sel = $(id), cur = sel.value;
+    const key = list.join("|");
+    if (sel.dataset.key === key) continue;
+    sel.dataset.key = key;
+    sel.innerHTML = list.map(p => `<option>${esc(p)}</option>`).join("") || "<option value=''>(none found)</option>";
+    const apc = list.find(p => /apc ?mini/i.test(p) && !/mk ?(2|ii)/i.test(p));
+    sel.value = list.includes(cur) ? cur : (apc || list[0] || "");
+  }
+}
+
+function appendLog(lines) {
+  if (!lines.length) return;
+  const box = $("log"), atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 5;
+  for (const l of lines) {
+    const d = document.createElement("div"); d.className = l.level; d.textContent = l.text; box.appendChild(d);
+    logSeq = Math.max(logSeq, l.seq);
+  }
+  while (box.childNodes.length > 300) box.removeChild(box.firstChild);
+  if (atEnd) box.scrollTop = box.scrollHeight;
+}
+
+async function poll() {
+  const j = await api("state?since=" + logSeq);
+  if (j.ok) {
+    const first = !S;
+    S = j.state;
+    if (!dirty) {
+      const fresh = JSON.stringify(S.config);
+      if (!cfg || JSON.stringify(cfg) !== fresh) {
+        const focused = document.activeElement && document.activeElement.id;
+        cfg = JSON.parse(fresh); fillSettings();
+        if (!focused || !focused.startsWith("e_")) renderEditor();
+      }
+    }
+    if (S.learned) select({ type: S.learned[0], id: S.learned[1] });
+    fillPorts(); appendLog(S.log); render();
+    if (first) renderEditor();
+  }
+  setTimeout(poll, j.ok ? 100 : 1000);
+}
+
+buildApc();
+poll();
+</script>
+</body>
+</html>
