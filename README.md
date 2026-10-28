@@ -6,8 +6,8 @@ running with a **T1** interface, with feedback on the APC mini's LEDs.
 
 ## Current status: Stage 1 (monitor + LED test only)
 
-This version **does not control any lighting.** It contains no Titan Go code at
-all. It does three things:
+The main app (`run_apc_bridge.py`) **does not control any lighting.** It does
+three things:
 
 1. **Finds the APC mini** (MIDI input and MIDI output are shown separately).
 2. **Shows every MIDI message** it sends: type, channel, note/controller number,
@@ -19,27 +19,52 @@ all. It does three things:
 |---|---|---|
 | 1 | MIDI monitor and LED test | **This release** |
 | 2 | Fader mapping, pickup/soft takeover, saved configs, simulated lighting targets | Not started |
-| 3 | Find a legitimate way to control Titan Go with the T1 | Not started |
+| 3 | Find a legitimate way to control Titan Go with the T1 | **In progress**: sACN triggers, see below |
 | 4 | Connect mapping to Titan Go | Not started |
 | 5 | Package as a standalone .exe | Not started |
 
+## Stage 3 test: sACN trigger test
+
+With a T1, Titan Go cannot take MIDI in directly (that needs a T2), and the
+Titan WebAPI answered "Titan is unavailable" on our test laptop. Titan does
+list **sACN** (a free network lighting protocol) as a trigger input on the T1.
+`run_sacn_test.py` checks whether that can work like a fader. Details are in
+[docs/TITAN_INTEGRATION.md](docs/TITAN_INTEGRATION.md).
+
+```
+py -3.12 run_sacn_test.py
+```
+
+* It starts with **output OFF**. Nothing is sent until you click "Send sACN: switch ON".
+* It sends one channel on one universe (default universe 10, channel 1).
+  Titan ignores it unless you create a matching trigger in System → Triggers.
+* A slider sets the value. Optionally, one APC mini fader drives it with
+  **pickup**: the fader does nothing until it reaches the current level, so
+  nothing jumps. A max output % caps the level.
+* Switching it off sends the standard sACN "stream terminated" message, so
+  Titan releases the source straight away.
+
+Close the main app before using an APC fader here, because only one program
+can open the APC mini at a time.
+
 ## What is documented vs. verified
 
-The APC mini cannot report what its LEDs are showing, so **only you, looking at
-the controller, can verify the LED messages.** Everything below comes from
-Akai's protocol sheet for the original APC mini and matching user reports.
-None of it has been checked on real hardware by this project yet.
+Everything below comes from Akai's protocol sheet for the original APC mini
+and matching user reports. On **28 Oct 2026** it was confirmed on a real
+first-generation APC mini (Windows 11, Python 3.12) using the Stage 1 monitor
+and LED test: all buttons, all faders and all LED states behaved as listed.
+The APC mini cannot report its LED state, so LED results are by eye.
 
 | Fact | Value used | Status |
 |---|---|---|
-| MIDI channel | 1 | Documented, not yet verified |
-| 8x8 grid pads | Notes 0-63, bottom-left = 0, top-left = 56 | Documented, not yet verified |
-| Track buttons (under the grid) | Notes 64-71, red LED | Documented, not yet verified |
-| Scene buttons (right side) | Notes 82-89, green LED, top = 82 | Documented, not yet verified |
-| Shift | Note 98, no LED | Documented, not yet verified |
-| Faders 1-8 / Master | CC 48-55 / CC 56 | Documented, not yet verified |
-| Grid LED (Note On velocity) | 0 off, 1 green, 2 green blink, 3 red, 4 red blink, 5 yellow, 6 yellow blink | Documented, not yet verified |
-| Round button LED (velocity) | 0 off, 1 on, 2 blink | Documented, not yet verified |
+| MIDI channel | 1 | Verified on hardware |
+| 8x8 grid pads | Notes 0-63, bottom-left = 0, top-left = 56 | Verified on hardware |
+| Track buttons (under the grid) | Notes 64-71, red LED | Verified on hardware |
+| Scene buttons (right side) | Notes 82-89, green LED, top = 82 | Verified on hardware |
+| Shift | Note 98, no LED | Verified on hardware |
+| Faders 1-8 / Master | CC 48-55 / CC 56 | Verified on hardware |
+| Grid LED (Note On velocity) | 0 off, 1 green, 2 green blink, 3 red, 4 red blink, 5 yellow, 6 yellow blink | Verified on hardware |
+| Round button LED (velocity) | 0 off, 1 on, 2 blink | Verified on hardware |
 | RGB colours / brightness levels | **Not supported** on the original APC mini | The app does not offer them |
 
 The **APC mini mk2** (2022, RGB pads) uses a different protocol. The app
@@ -56,8 +81,14 @@ You only do this once.
 
 ### 1. Install Python
 
-1. Go to <https://www.python.org/downloads/windows/> and download **Python 3.12**
-   (the "Windows installer (64-bit)"). Newer versions should also work.
+1. Go to <https://www.python.org/downloads/windows/>, scroll down to the latest
+   **Python 3.12.x** release, and download its "Windows installer (64-bit)".
+
+   **It must be 3.12, not 3.13 or 3.14.** The MIDI library `python-rtmidi`
+   (version 1.5.8, the newest) only ships ready-made Windows downloads for
+   Python 3.8 to 3.12. On newer Python, pip tries to compile it from source
+   and fails with "Unknown compiler(s)". It is fine to have 3.12 installed
+   alongside a newer Python; all commands below use `py -3.12` to pick it.
 2. Run the installer. On the first screen **tick "Add python.exe to PATH"**,
    then click **Install Now**. Leave the "tcl/tk and IDLE" option ticked (it is
    by default); the app's window needs it.
@@ -65,10 +96,11 @@ You only do this once.
    check it worked:
 
    ```
-   py --version
+   py -3.12 --version
    ```
 
-   You should see something like `Python 3.12.x`.
+   You should see something like `Python 3.12.x`. (`py --list` shows every
+   Python you have installed.)
 
 ### 2. Get the code
 
@@ -84,7 +116,7 @@ In Command Prompt, go into the folder (change the path to wherever you put it):
 
 ```
 cd C:\APC-Bridge
-py -m pip install -r requirements.txt
+py -3.12 -m pip install -r requirements.txt
 ```
 
 This installs `mido` and `python-rtmidi` (both free and open source).
@@ -94,14 +126,14 @@ This installs `mido` and `python-rtmidi` (both free and open source).
 Plug in the APC mini first, then:
 
 ```
-py run_apc_bridge.py
+py -3.12 run_apc_bridge.py
 ```
 
 To look around **without the controller plugged in**, run the simulator. It
 invents fader moves and button presses and is clearly labelled SIMULATION:
 
 ```
-py run_apc_bridge.py --simulate
+py -3.12 run_apc_bridge.py --simulate
 ```
 
 A log file is written to `logs\apc_bridge.log` in the folder you ran it from.
@@ -153,14 +185,18 @@ the window and the `logs\apc_bridge.log` file are ideal.
 the Python installer, choose *Modify*, and make sure "Add Python to environment
 variables" / "py launcher" is ticked. Then close and reopen Command Prompt.
 
-**`pip install` fails while building `python-rtmidi`** (errors mentioning a C
-compiler or "Microsoft Visual C++ 14.0 is required") – there is no ready-made
-download for your Python version yet. Install Python 3.12 from python.org and
-run `py -3.12 -m pip install -r requirements.txt`, then start the app with
-`py -3.12 run_apc_bridge.py`.
+**`pip install` fails while building `python-rtmidi`** (errors such as
+"Unknown compiler(s)", "Failed to activate VS environment" or "Microsoft
+Visual C++ 14.0 is required") – your Python is too new for python-rtmidi's
+ready-made download (it covers Python 3.8-3.12 on Windows). You do not need a
+compiler: install Python 3.12 as in step 1, then run
+`py -3.12 -m pip install -r requirements.txt` and start the app with
+`py -3.12 run_apc_bridge.py`. Because pip stops at the first failure, `mido`
+will also be missing until this succeeds.
 
 **`ModuleNotFoundError: No module named 'mido'`** – step 3 was skipped or ran
-for a different Python. Run `py -m pip install -r requirements.txt` again.
+for a different Python. Run `py -3.12 -m pip install -r requirements.txt` again,
+and start the app with `py -3.12`, not plain `py`.
 
 **`No module named 'tkinter'`** – reinstall Python from python.org (not the
 Microsoft Store version) and keep "tcl/tk and IDLE" ticked.
@@ -190,8 +226,9 @@ plug it back in, click **Refresh devices**, then **Connect**.
 
 ## Safety design
 
-* Lighting output is **disabled**. There is no Titan Go adapter in this build,
-  so nothing can change your lights.
+* The main app has **no lighting output**. The only thing that can send data
+  Titan could act on is the separate sACN test tool. Its output starts off
+  and needs a matching trigger in Titan to do anything.
 * MIDI input and LED output are separate modules (`midi_input.py`,
   `led_output.py`). Button presses never automatically send LED messages, so
   there are no feedback loops; LEDs only change when you click a test button.
@@ -203,8 +240,8 @@ plug it back in, click **Refresh devices**, then **Connect**.
 ## For developers
 
 ```
-py -m pip install -r requirements-dev.txt
-py -m pytest
+py -3.12 -m pip install -r requirements-dev.txt
+py -3.12 -m pytest
 ```
 
 Code layout:
@@ -218,5 +255,9 @@ Code layout:
 | `apc_bridge/midi_events.py` | Decoding messages for display |
 | `apc_bridge/simulation.py` | Fake APC mini for `--simulate` |
 | `apc_bridge/gui.py` | tkinter window |
+| `apc_bridge/sacn.py` | sACN (E1.31) packet builder and sender |
+| `apc_bridge/pickup.py` | MIDI to DMX scaling and fader pickup |
+| `apc_bridge/sacn_test.py` | sACN trigger test window |
 
 What is needed to start Stages 2 and 3 is in [docs/NEXT_STEPS.md](docs/NEXT_STEPS.md).
+The Titan Go investigation (Stage 3) is in [docs/TITAN_INTEGRATION.md](docs/TITAN_INTEGRATION.md).

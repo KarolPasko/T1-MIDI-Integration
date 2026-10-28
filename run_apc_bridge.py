@@ -1,4 +1,4 @@
-"""Convenience launcher: double-click or run `py run_apc_bridge.py`."""
+"""Convenience launcher: double-click or run `py -3.12 run_apc_bridge.py`."""
 
 import sys
 

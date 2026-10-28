@@ -6,10 +6,11 @@ there is exactly one place to correct if real hardware behaves differently.
 Where these facts come from
 ---------------------------
 * DOCUMENTED: Akai Professional's "APC mini Communications Protocol" sheet for
-  the first-generation unit, plus multiple independent user reports of the
-  same LED velocity table. None of it has been VERIFIED on this project's own
-  hardware yet. The MIDI monitor and the LED test in the app exist precisely
-  to verify it - see README.md, "Verifying the protocol".
+  the first-generation unit, plus independent user reports of the same LED
+  velocity table.
+* VERIFIED 2026-10-28 on a real first-generation APC mini with the Stage 1
+  monitor and LED test: all buttons, faders and LED states below behaved as
+  documented (LED results confirmed by eye; the unit cannot report them).
 
 * The APC mini mk2 (2022, RGB pads) uses a DIFFERENT protocol (different
   button notes, RGB velocity palette). Nothing in this file applies to it.
