@@ -236,3 +236,39 @@ def test_remapping_drops_active_state():
     cfg.button(0).mode = "unused"
     e.apply_config(cfg)
     assert e.active == set()
+
+
+def test_blackout_zeroes_everything_and_ignores_input():
+    cfg = BridgeConfig()
+    btn = cfg.button(0)
+    btn.mode, btn.address, btn.off_percent = TOGGLE, 20, 10
+    e = BridgeEngine(cfg)
+    e.set_output_enabled(True)
+    e.handle_cc(CH, 48, 0)
+    e.handle_cc(CH, 48, 127)
+    e.handle_press(0)
+    assert e.dmx_frame()[0] == 255 and e.dmx_frame()[19] == 255
+    e.set_blackout(True)
+    assert e.dmx_frame() == bytes(512)          # even the button's 10% OFF level
+    assert e.handle_cc(CH, 48, 50) is False and e.handle_press(0) is False
+    assert e.dmx_frame() == bytes(512)
+    e.set_blackout(False)
+    assert 0 not in e.active                    # the toggle stays off
+    assert e.dmx_frame()[19] == 26              # back to its OFF level
+    assert e.handle_cc(CH, 48, 120) is False    # fader must come down to zero first
+    e.handle_cc(CH, 48, 1)
+    assert e.faders[0].picked_up and e.handle_cc(CH, 48, 127)
+
+
+def test_blackout_button_toggles_and_blinks():
+    from apc_bridge.config import BLACKOUT
+    cfg = BridgeConfig()
+    cfg.button(98).mode = BLACKOUT          # Shift
+    cfg.button(64).mode = BLACKOUT          # a round button with a light
+    e = BridgeEngine(cfg)
+    e.set_output_enabled(True)
+    assert e.handle_press(98) and e.blackout
+    assert e.led_states()[64] == RoundLed.BLINK
+    e.handle_release(98)
+    assert e.handle_press(98) and not e.blackout
+    assert 64 not in e.led_states()
