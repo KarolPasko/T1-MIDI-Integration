@@ -52,3 +52,54 @@ def test_save_refuses_invalid(tmp_path):
     cfg = BridgeConfig(universe=0)
     with pytest.raises(ConfigError):
         cfgmod.save(cfg, tmp_path / "c.json")
+
+
+from apc_bridge.config import MOMENTARY, TOGGLE, ButtonMapping
+
+
+def test_default_buttons():
+    cfg = BridgeConfig()
+    assert len(cfg.buttons) == 64 + 8 + 8 + 1
+    assert cfg.button(64).mode == "fader_enable" and cfg.button(64).fader == 0
+    assert cfg.button(89).fader == 8
+    assert cfg.button(82).mode == "output_status"
+    assert cfg.button(0).mode == "unused"
+
+
+def test_old_fader_only_file_still_loads(tmp_path):
+    path = tmp_path / "config.json"
+    path.write_text(json.dumps({"universe": 10, "faders": [{"cc": 48, "label": "A", "address": 1}]}))
+    cfg = cfgmod.load(path)
+    assert len(cfg.buttons) == 81
+
+
+def test_button_round_trip_and_validation(tmp_path):
+    cfg = BridgeConfig()
+    b = cfg.button(0)
+    b.mode, b.address, b.label = TOGGLE, 30, "Strobe"
+    path = tmp_path / "c.json"
+    cfgmod.save(cfg, path)
+    assert cfgmod.load(path).button(0) == b
+
+
+def test_button_channel_clash_with_fader():
+    cfg = BridgeConfig()
+    cfg.button(0).mode, cfg.button(0).address = MOMENTARY, 1   # fader 1 uses channel 1
+    with pytest.raises(ConfigError, match="channel 1"):
+        cfg.validate()
+
+
+@pytest.mark.parametrize("kw", [
+    {"mode": "bogus"}, {"mode": MOMENTARY, "address": 0},
+    {"mode": MOMENTARY, "address": 30, "on_percent": 150},
+    {"active_led": 7}, {"mode": "fader_enable", "fader": 9},
+])
+def test_invalid_buttons(kw):
+    b = ButtonMapping(0, **kw)
+    with pytest.raises(ConfigError):
+        b.validate(9)
+
+
+def test_round_button_rejects_grid_colours():
+    with pytest.raises(ConfigError):
+        ButtonMapping(64, active_led=3).validate(9)

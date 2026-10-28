@@ -1,3 +1,6 @@
 mido>=1.3
 # Ready-made Windows wheels exist only for Python 3.8-3.12; use `py -3.12`.
 python-rtmidi>=1.5
+# Desktop window for the bridge (uses Edge WebView2, built into Windows 11).
+# Without it the bridge opens in your web browser instead.
+pywebview>=5.0; sys_platform == "win32"

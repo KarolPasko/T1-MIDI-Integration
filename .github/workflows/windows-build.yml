@@ -1,0 +1,33 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -r requirements-build.txt pytest
+      - name: Unit tests
+        run: python -m pytest -q
+      - name: Build the .exe
+        run: >
+          python -m PyInstaller --noconfirm --clean --onefile --windowed
+          --name APC-Titan-Bridge
+          --add-data "apc_bridge\web;apc_bridge\web"
+          --collect-submodules mido
+          --hidden-import rtmidi
+          --collect-all webview
+          run_bridge.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: APC-Titan-Bridge
+          path: dist/APC-Titan-Bridge.exe
