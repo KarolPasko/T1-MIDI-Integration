@@ -21,7 +21,8 @@ MOMENTARY = "momentary"          # sends its ON level while held, OFF level when
 TOGGLE = "toggle"                # press = ON level, press again = OFF level
 FADER_ENABLE = "fader_enable"    # switches one fader on/off
 OUTPUT_STATUS = "output_status"  # light only: lit while output is on, blinking while off
-BUTTON_MODES = (UNUSED, MOMENTARY, TOGGLE, FADER_ENABLE, OUTPUT_STATUS)
+BLACKOUT = "blackout"            # press: everything to zero; press again: release
+BUTTON_MODES = (UNUSED, MOMENTARY, TOGGLE, FADER_ENABLE, OUTPUT_STATUS, BLACKOUT)
 SENDING_MODES = (MOMENTARY, TOGGLE)
 
 BUTTON_NOTES = apc_mini.LED_NOTES + (apc_mini.SHIFT_NOTE,)

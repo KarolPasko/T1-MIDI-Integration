@@ -87,16 +87,62 @@
   #start h3 { margin: 16px 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
   .filebtn { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 9px 12px; }
   .filebtn .d { display: block; color: var(--muted); font-size: 12px; }
-  #credits { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); font-size: 13px; }
-  #credits a { color: var(--accent); text-decoration: none; }
-  #credits a:hover { text-decoration: underline; }
+  #start .box { width: min(900px, 100%); display: grid; grid-template-columns: 1fr 1.25fr; gap: 22px; }
+  .about { background: linear-gradient(160deg, #2b2140 0%, #1d2a3f 100%); border: 1px solid #4b3f6b;
+           border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 10px; }
+  .about .logo { display: grid; grid-template-columns: repeat(4, 22px); gap: 5px; margin-bottom: 4px; }
+  .about .logo span { width: 22px; height: 22px; border-radius: 5px; }
+  .about .by { color: #c9b8ff; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
+  .about .name { font-size: 34px; font-weight: 800; line-height: 1.1; }
+  .about .app { color: var(--muted); }
+  .about a.social { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 9px;
+                    background: rgba(255,255,255,.07); color: var(--text); text-decoration: none; font-weight: 600; }
+  .about a.social:hover { background: rgba(255,255,255,.14); }
+  .about a.social small { display: block; color: var(--muted); font-weight: 400; }
+  .about .ver { margin-top: auto; color: var(--muted); font-size: 12px; }
+  #aboutModal { position: fixed; inset: 0; background: rgba(10,11,14,.85); display: none; z-index: 15;
+                align-items: center; justify-content: center; padding: 16px; }
+  #aboutModal .about { width: min(380px, 100%); }
+  #ver { font-size: 12px; opacity: .7; }
+  #aboutBtn { background: #3b2f5c; border-color: #6b58a8; font-weight: 600; }
+  #blackoutBtn { background: #000; border: 2px solid #fff; color: #fff; font-weight: 800; letter-spacing: .05em; }
+  #blackoutBtn:disabled { border-color: #666; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #444; margin-right: 3px;
+         vertical-align: middle; }
+  .dot.flash { background: #8ef0a5; box-shadow: 0 0 6px #8ef0a5; }
+  #activity { font-size: 12px; opacity: .85; }
+  #timer { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .banner { display: none; padding: 10px 16px; font-weight: 700; font-size: 15px; }
+  #lostBanner, #bridgeBanner { background: #b3141b; }
+  #blackoutBanner { background: #000; border-bottom: 3px solid #fff; font-size: 18px; }
+  #blackoutBanner button { margin-left: 12px; font-weight: 700; }
   @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) { #start .box { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 
+<template id="aboutTpl">
+  <div class="about">
+    <div class="logo"><span class="c-green"></span><span class="c-red"></span><span style="background:#3a3f4a"></span><span class="c-red"></span>
+      <span class="c-red"></span><span class="c-green"></span><span class="c-yellow"></span><span class="c-red"></span></div>
+    <div class="by">Made by</div>
+    <div class="name">Karol Pasko</div>
+    <div class="app">APC Titan Bridge: free APC mini control for Avolites Titan Go.</div>
+    <a class="social" href="https://www.instagram.com/karol.pasko/" target="_blank" rel="noopener">📷
+      <span>Instagram<small>@karol.pasko</small></span></a>
+    <a class="social" href="https://karolpasko.github.io/" target="_blank" rel="noopener">🌐
+      <span>Website<small>KarolPasko.github.io</small></span></a>
+    <div class="ver">Version <span class="verNum"></span></div>
+  </div>
+</template>
+
+<div id="aboutModal"></div>
+
 <div id="start">
   <div class="box">
+  <div id="startAbout"></div>
+  <div>
     <h1>APC mini → Titan Go</h1>
     <div class="hint">Choose a mapping to load.</div>
     <h3>Your files</h3>
@@ -111,24 +157,25 @@
     </div>
     <input type="file" id="importFile" accept=".json,application/json" style="display:none">
     <p class="hint" id="folderHint"></p>
-    <div id="credits" class="row">
-      <span>Made by <b>Karol Pasko</b></span>
-      <a href="https://www.instagram.com/karol.pasko/" target="_blank" rel="noopener">Instagram @karol.pasko</a>
-      <a href="https://karolpasko.github.io/" target="_blank" rel="noopener">KarolPasko.github.io</a>
-    </div>
+  </div>
   </div>
 </div>
 
 <div id="top">
   <span class="row">
+    <button id="aboutBtn" title="About Karol Pasko">About</button>
     <span id="fileName">No file loaded</span><span id="unsaved"></span>
     <button id="openBtn">Open</button>
     <button id="saveBtn">Save</button>
     <button id="saveAsBtn">Save as…</button>
   </span>
   <span class="row">
-    <span id="statusText">OUTPUT OFF</span>
+    <span id="activity" title="Flashes when the APC mini sends something / when sACN is sent">
+      <span class="dot" id="midiDot"></span>MIDI <span class="dot" id="sacnDot"></span>sACN</span>
+    <span id="statusText">OUTPUT OFF</span><span id="timer"></span>
+    <button id="blackoutBtn" title="Every channel to zero (Esc key)">BLACKOUT</button>
     <button id="outBtn">Switch output ON</button>
+    <span id="ver"></span>
   </span>
 </div>
 <div id="devices" class="row">
@@ -140,6 +187,12 @@
   <span id="inPill" class="pill idle">input: off</span>
   <span id="ledPill" class="pill idle">LEDs: off</span>
 </div>
+<div id="blackoutBanner" class="banner">BLACKOUT – every channel is at 0. Faders and buttons are ignored.
+  <button id="releaseBtn">Release blackout</button>
+  <span class="hint" style="color:#ccc">After releasing, bring each fader down to 0 to pick it up again.</span></div>
+<div id="lostBanner" class="banner">APC mini disconnected – output switched OFF. Plug it back in: it reconnects by itself,
+  then switch output ON again.</div>
+<div id="bridgeBanner" class="banner">Lost contact with the bridge. If the window stays like this, restart the app.</div>
 <div id="learnBanner">Press a button or move a fader on the APC mini to select it… <button id="learnCancel">Cancel</button></div>
 
 <main>
@@ -191,7 +244,8 @@
 const TOKEN = "__TOKEN__";
 const TRACK = [64,65,66,67,68,69,70,71], SCENE = [82,83,84,85,86,87,88,89], SHIFT = 98;
 const MODES = { unused: "Not used", momentary: "Momentary (on while held)", toggle: "Toggle (press on / off)",
-                fader_enable: "Fader on/off", output_status: "Output status light" };
+                fader_enable: "Fader on/off", output_status: "Output status light",
+                blackout: "Blackout (press: all to zero, again: release)" };
 const SENDING = new Set(["momentary", "toggle"]);
 const GRID_LEDS = [[0,"Off"],[1,"Green"],[2,"Green blink"],[3,"Red"],[4,"Red blink"],[5,"Yellow"],[6,"Yellow blink"]];
 const kind = n => n < 64 ? "grid" : n <= 71 ? "track" : (n >= 82 && n <= 89) ? "scene" : "shift";
@@ -221,7 +275,10 @@ async function api(path, body) {
     const j = await r.json();
     if (!j.ok) toast(j.error || "Something went wrong");
     return j;
-  } catch (e) { toast("Lost contact with the bridge: " + e); return { ok: false }; }
+  } catch (e) {
+    if (!path.startsWith("state")) toast("Lost contact with the bridge: " + e);
+    return { ok: false, lost: true };
+  }
 }
 let toastTimer;
 function toast(msg) {
@@ -333,9 +390,20 @@ function ledClass(n, s) {
   return s === 2 ? c + " blink" : c;
 }
 
+const fmtTime = t => { const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60;
+  return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(sec).padStart(2, "0"); };
+let lastMidi = null, lastPackets = null;
+function flash(id, changed) { $(id).classList.toggle("flash", changed); }
 function render() {
   if (!S) return;
   const out = S.output, on = out.enabled, cur = S.current;
+  $("ver").textContent = "v" + S.version;
+  $("timer").textContent = S.output_on_for != null ? " " + fmtTime(S.output_on_for) : "";
+  flash("midiDot", lastMidi !== null && S.midi_count !== lastMidi); lastMidi = S.midi_count;
+  flash("sacnDot", on && lastPackets !== null && out.packets !== lastPackets); lastPackets = out.packets;
+  $("blackoutBanner").style.display = S.blackout ? "block" : "none";
+  $("blackoutBtn").disabled = !cur || S.blackout;
+  $("lostBanner").style.display = S.apc_lost ? "block" : "none";
   $("top").className = on ? (out.simulate ? "sim" : "on") : "";
   $("statusText").textContent = !on ? "OUTPUT OFF" : out.simulate ? "TEST MODE – nothing sent"
     : `OUTPUT ON – universe ${cfg ? cfg.universe : ""}`;
@@ -429,6 +497,10 @@ function renderEditor() {
       "lit = live, blinking = waiting for pickup");
   } else if (b.mode === "output_status") {
     html += `<p class="hint">Lit while output is ON, blinking while OFF.</p>`;
+  } else if (b.mode === "blackout") {
+    html += `<p class="hint">Press once: every channel goes to zero. Press again: release (faders then need to come
+      down to zero to pick up). Blinks during blackout. Works even while editing is locked.</p>`;
+    if (kind(n) === "grid") html += field("Blink colour", ledSel("e_aled", b.active_led));
   }
   ed.innerHTML = html;
   bind("e_mode", e => {
@@ -478,6 +550,28 @@ $("connectBtn").onclick = () => api("connect", { input: $("inSel").value, output
 $("disconnectBtn").onclick = () => api("disconnect", {});
 $("learnBtn").onclick = () => api("learn", { on: true });
 $("learnCancel").onclick = () => api("learn", { on: false });
+$("blackoutBtn").onclick = () => api("blackout", { on: true });
+$("releaseBtn").onclick = () => api("blackout", { on: false });
+// Esc = blackout, from anywhere in the window. Releasing needs the button, so it can't happen by accident.
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("aboutModal").style.display === "flex") { $("aboutModal").style.display = "none"; return; }
+  if (e.key === "Escape" && S && S.current && !S.blackout) { e.preventDefault(); api("blackout", { on: true }); }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s" && S && S.current) {
+    e.preventDefault(); (S.current.kind === "saved" ? $("saveBtn") : $("saveAsBtn")).click();
+  }
+});
+function fillAbout(el) {
+  el.innerHTML = ""; el.appendChild($("aboutTpl").content.cloneNode(true));
+  el.querySelector(".verNum").textContent = S ? S.version : "";
+}
+$("aboutBtn").onclick = () => {
+  fillAbout($("aboutModal"));
+  const close = document.createElement("button"); close.textContent = "Close";
+  close.onclick = () => $("aboutModal").style.display = "none";
+  $("aboutModal").querySelector(".about").appendChild(close);
+  $("aboutModal").style.display = "flex";
+};
+$("aboutModal").onclick = e => { if (e.target.id === "aboutModal") $("aboutModal").style.display = "none"; };
 
 const isApc = p => /apc ?mini/i.test(p) && !/mk ?(2|ii)/i.test(p);
 function fillPorts() {
@@ -508,8 +602,11 @@ function appendLog(lines) {
 
 async function poll() {
   const j = await api("state?since=" + logSeq);
+  $("bridgeBanner").style.display = j.lost ? "block" : "none";
   if (j.ok) {
+    const first = !S;
     S = j.state;
+    if (first) fillAbout($("startAbout"));
     if (!dirty) {
       const fresh = JSON.stringify(S.config);
       if (!cfg || JSON.stringify(cfg) !== fresh) {

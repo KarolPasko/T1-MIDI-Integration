@@ -85,8 +85,10 @@ def main(argv: list[str] | None = None) -> int:
             except ImportError:
                 print("pywebview is not installed, opening the interface in your browser instead.")
         if webview is not None:
-            webview.create_window(APP_NAME + (" [SIMULATED APC]" if args.simulate else ""), url,
-                                  width=1340, height=900, min_size=(1100, 720))
+            from . import __version__
+            title = f"{APP_NAME} {__version__} - by Karol Pasko" + (" [SIMULATED APC]" if args.simulate else "")
+            # confirm_close: closing the window by accident mid-show stops the output.
+            webview.create_window(title, url, width=1340, height=900, min_size=(1100, 720), confirm_close=True)
             webview.start()
         else:
             webbrowser.open(url)
