@@ -430,7 +430,8 @@ function render() {
     const note = +n, b = byNote[note];
     el.className = [el.dataset.base, ledClass(note, leds[n] || 0), pressed.has(note) ? "pressed" : "",
                     selected.type === "button" && selected.id === note ? "selected" : ""].join(" ");
-    el.querySelector(".lbl").textContent = b && b.mode !== "unused" && kind(note) === "grid" ? (b.label || "") : "";
+    el.querySelector(".lbl").textContent = b && b.mode !== "unused" && kind(note) === "grid"
+      ? (b.label || "") + (b.mode === "toggle" && b.group ? ` [G${b.group}]` : "") : "";
   }
   S.faders.forEach((f, i) => {
     const el = faderEls[i];
@@ -484,6 +485,8 @@ function renderEditor() {
   if (SENDING.has(b.mode)) {
     html += field("Name", `<input type="text" id="e_label" value="${esc(b.label)}">`);
     html += field("sACN channel", `<input type="number" id="e_addr" min="1" max="512" value="${b.address}">`);
+    if (b.mode === "toggle") html += field("Group", `<input type="number" id="e_group" min="0" max="99" value="${b.group || 0}">`,
+      "0 = none. Buttons with the same group number: switching one on switches the others off.");
     if (n !== SHIFT) {
       html += field("Light when off", ledSel("e_iled", b.idle_led));
       html += field("Light when on", ledSel("e_aled", b.active_led));
@@ -510,6 +513,7 @@ function renderEditor() {
   }, "onchange");
   bind("e_label", e => { b.label = e.target.value; changed(); });
   bind("e_addr", e => { b.address = +e.target.value; changed(); });
+  bind("e_group", e => { b.group = +e.target.value; changed(); render(); });
   bind("e_on", e => { b.on_percent = +e.target.value; changed(); });
   bind("e_off", e => { b.off_percent = +e.target.value; changed(); });
   bind("e_aled", e => { b.active_led = +e.target.value; changed(); }, "onchange");
