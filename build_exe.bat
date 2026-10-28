@@ -6,6 +6,7 @@ py -3.12 -m pip install -r requirements-build.txt || goto :error
 py -3.12 -m PyInstaller --noconfirm --clean --onefile --windowed ^
   --name APC-Titan-Bridge ^
   --add-data "apc_bridge\web;apc_bridge\web" ^
+  --add-data "apc_bridge\presets;apc_bridge\presets" ^
   --collect-submodules mido ^
   --hidden-import rtmidi ^
   --collect-all webview ^

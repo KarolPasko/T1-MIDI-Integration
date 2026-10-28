@@ -34,7 +34,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--simulate", action="store_true", help="use a fake APC mini")
     parser.add_argument("--browser", action="store_true", help="open in the web browser, not a window")
     parser.add_argument("--port", type=int, default=0, help="local port (default: any free port)")
-    parser.add_argument("--config", type=Path, default=None, help="settings file")
     args = parser.parse_args(argv)
 
     folder = app_folder()
@@ -45,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     from .app_core import BridgeCore
     from .web_server import make_server, serve_in_background
 
-    core = BridgeCore(args.config or folder / "config.json", simulate_midi=args.simulate)
+    core = BridgeCore(folder, simulate_midi=args.simulate)
     core.start()
     server, url = make_server(core, args.port)
     serve_in_background(server)

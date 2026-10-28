@@ -24,8 +24,8 @@ automatically on GitHub's Windows machines:
 1. Open the repository on GitHub and click **Actions**, then **Windows build**.
 2. Click the newest run with a green tick, scroll down to **Artifacts**, and
    download **APC-Titan-Bridge**. It is a .zip with `APC-Titan-Bridge.exe` inside.
-3. Put the .exe in its own folder, e.g. `C:\APC-Bridge`. Its settings
-   (`config.json`) and `logs` are kept next to it.
+3. Put the .exe in its own folder, e.g. `C:\APC-Bridge`. Your saved
+   mappings (in a `mappings` folder) and `logs` are kept next to it.
 
 Windows SmartScreen may warn that the app is from an "unknown publisher",
 because it is not code-signed (signing costs money). Click **More info →
@@ -52,22 +52,51 @@ Only one of them can use the APC mini at a time.
 
 ## Using the bridge
 
-The bridge window shows a picture of the APC mini. Click any pad, round
-button, Shift or fader to edit it on the right, or click **Learn** and then
-press or move the real control.
+### The start screen
+
+When the bridge starts it asks which mapping to load:
+
+* **Your files**: mappings you saved before (newest first).
+* **Ready-made files**, shipped with the app:
+
+  | File | What it does | sACN channels |
+  |---|---|---|
+  | All buttons momentary | Every pad and round button is ON while held | faders 1–9, pads 10–73, bottom row 74–81, right column 82–89 |
+  | All buttons toggle | Every pad and round button latches: press on, press again off | same as above |
+  | Faders only (basic) | Just the 9 faders; the bottom buttons switch faders on/off | faders 1–9 |
+
+  In both "All buttons" files the 64 pads are **red when off and green when
+  on**. The round buttons only have one colour each (the APC mini hardware
+  cannot show red/green there), so the **bottom row is red when off and
+  blinking red when on**, and the **right-hand column is dark when off and
+  green when on**. Shift has no light and is left unused.
+* **Open a file from the computer…** loads a mapping file from anywhere, and
+  **Start empty** begins with the basic fader setup.
+
+Ready-made files are never overwritten. Change one and use **Save as** to
+keep it under your own name; it then appears under "Your files". **Open** in
+the top bar brings the start screen back. Settings saved by older versions
+(`config.json`) appear as "My settings".
+
+### Editing
+
+The window shows a picture of the APC mini. Click any pad, round button,
+Shift or fader to edit it on the right, or click **Learn** and then press or
+move the real control. Changes take effect straight away; click **Save** (or
+**Save as**) to keep them.
 
 ### What each button can do
 
 | Mode | What happens | sACN it sends |
 |---|---|---|
-| Not used | Nothing (the default for the 64 pads) | – |
+| Not used | Nothing (the pads in "Faders only") | – |
 | Momentary | ON while you hold it, like a flash button | ON level while held, OFF level otherwise |
 | Toggle | Press once for ON, again for OFF | ON level or OFF level |
-| Fader on/off | Switches one fader on/off (default for the round buttons under the faders and the bottom-right one) | – |
-| Output status light | Lit while output is ON, blinking while OFF (default for the top-right button) | – |
+| Fader on/off | Switches one fader on/off (the bottom row and bottom-right button in "Faders only") | – |
+| Output status light | Lit while output is ON, blinking while OFF (the top-right button in "Faders only") | – |
 
-Each momentary/toggle button gets its own sACN channel (the editor's **Next
-free** button picks one) and its own **light when ON** and **light when OFF**
+Each momentary/toggle button gets its own sACN channel (a free one is picked
+when you choose the mode) and its own **light when ON** and **light when OFF**
 colours, using only what the hardware can show:
 * grid pads: off, green, red or yellow, each steady or blinking
 * bottom row: red or blinking red
@@ -101,7 +130,8 @@ but they have not been verified.
 ### Every time
 
 1. Plug in the APC mini, start Titan Go, then start the bridge.
-2. Click **Connect**. The top-right button on the APC blinks: output is **OFF**.
+2. Pick a mapping on the start screen. The bridge connects to the APC mini by
+   itself (or choose it and click **Connect**).
 3. Click **Switch output ON** (the bar at the top turns red).
 4. **Pickup:** each fader only takes control once you move it to its last
    level. Its status shows "Pickup N%", and its on/off button blinks until
@@ -116,10 +146,11 @@ itself, the LEDs will not know.
 
 ### Settings
 
-* Change things in the editor, then click **Apply changes** and **Save**.
-  Settings are locked while output is ON, except switching faders on/off.
-* **Max output %** caps every fader and button.
-* **Simulate only** calculates everything but sends nothing to the network.
+* Mappings and settings are locked while output is ON. Switch output OFF to
+  change them.
+* **Output settings** (folded away under the editor): universe, multicast or
+  unicast, **Max output %** (caps every fader and button), pad lights, level
+  meters, and **Test mode**, which calculates everything but sends nothing.
 * If Titan does not react, try **Unicast to IP** with 127.0.0.1 instead of
   Multicast.
 * If the APC mini is unplugged while output is on, output switches **OFF**.
@@ -376,7 +407,8 @@ Code layout:
 | `apc_bridge/sacn.py` | sACN (E1.31) packet builder and sender |
 | `apc_bridge/pickup.py` | MIDI to DMX scaling and fader pickup |
 | `apc_bridge/sacn_test.py` | sACN trigger test window |
-| `apc_bridge/config.py` | Bridge settings, JSON save/load |
+| `apc_bridge/config.py` | Bridge settings, JSON save/load, the ready-made mappings |
+| `apc_bridge/library.py` | The `mappings` folder and the ready-made files in `apc_bridge/presets` |
 | `apc_bridge/bridge.py` | Mapping engine (pure logic, unit tested) |
 | `apc_bridge/app_core.py` | Running bridge: MIDI/sACN/LED loop on one thread, with a lock |
 | `apc_bridge/web_server.py` | Local-only web server and JSON API (token-protected) |

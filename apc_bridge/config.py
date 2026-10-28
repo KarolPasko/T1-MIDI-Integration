@@ -207,3 +207,33 @@ def load(path: Path = DEFAULT_PATH) -> BridgeConfig:
     if not isinstance(data, dict):
         raise ConfigError(f"{path} does not contain a settings object")
     return BridgeConfig.from_dict(data)
+
+
+def all_buttons_preset(mode: str) -> BridgeConfig:
+    """Every button with a light mapped to `mode` (momentary or toggle).
+
+    Lights: grid pads red when off, green when on. The round buttons only
+    have one colour each, so the bottom row is red when off and blinking red
+    when on, and the right-hand column is dark when off and green when on.
+    sACN channels: faders 1-9, grid pad n -> 10+n (10-73),
+    bottom row -> 74-81, right-hand column -> 82-89. Shift stays unused.
+    """
+    if mode not in SENDING_MODES:
+        raise ValueError(f"mode must be one of {SENDING_MODES}")
+    cfg = BridgeConfig()
+    for b in cfg.buttons:
+        kind = apc_mini.control_kind(b.note)
+        if kind is None:
+            continue
+        b.mode, b.label = mode, ""
+        if kind == "grid":
+            b.address = b.note + 10
+            b.active_led, b.idle_led = int(apc_mini.GridLed.GREEN), int(apc_mini.GridLed.RED)
+        elif kind == "track":
+            b.address = b.note + 10
+            b.active_led, b.idle_led = int(apc_mini.RoundLed.BLINK), int(apc_mini.RoundLed.ON)
+        else:
+            b.address = b.note
+            b.active_led, b.idle_led = int(apc_mini.RoundLed.ON), int(apc_mini.RoundLed.OFF)
+    cfg.validate()
+    return cfg
