@@ -25,21 +25,22 @@ all. It does three things:
 
 ## What is documented vs. verified
 
-The APC mini cannot report what its LEDs are showing, so **only you, looking at
-the controller, can verify the LED messages.** Everything below comes from
-Akai's protocol sheet for the original APC mini and matching user reports.
-None of it has been checked on real hardware by this project yet.
+Everything below comes from Akai's protocol sheet for the original APC mini
+and matching user reports. On **28 Oct 2026** it was confirmed on a real
+first-generation APC mini (Windows 11, Python 3.12) using the Stage 1 monitor
+and LED test: all buttons, all faders and all LED states behaved as listed.
+The APC mini cannot report its LED state, so LED results are by eye.
 
 | Fact | Value used | Status |
 |---|---|---|
-| MIDI channel | 1 | Documented, not yet verified |
-| 8x8 grid pads | Notes 0-63, bottom-left = 0, top-left = 56 | Documented, not yet verified |
-| Track buttons (under the grid) | Notes 64-71, red LED | Documented, not yet verified |
-| Scene buttons (right side) | Notes 82-89, green LED, top = 82 | Documented, not yet verified |
-| Shift | Note 98, no LED | Documented, not yet verified |
-| Faders 1-8 / Master | CC 48-55 / CC 56 | Documented, not yet verified |
-| Grid LED (Note On velocity) | 0 off, 1 green, 2 green blink, 3 red, 4 red blink, 5 yellow, 6 yellow blink | Documented, not yet verified |
-| Round button LED (velocity) | 0 off, 1 on, 2 blink | Documented, not yet verified |
+| MIDI channel | 1 | Verified on hardware |
+| 8x8 grid pads | Notes 0-63, bottom-left = 0, top-left = 56 | Verified on hardware |
+| Track buttons (under the grid) | Notes 64-71, red LED | Verified on hardware |
+| Scene buttons (right side) | Notes 82-89, green LED, top = 82 | Verified on hardware |
+| Shift | Note 98, no LED | Verified on hardware |
+| Faders 1-8 / Master | CC 48-55 / CC 56 | Verified on hardware |
+| Grid LED (Note On velocity) | 0 off, 1 green, 2 green blink, 3 red, 4 red blink, 5 yellow, 6 yellow blink | Verified on hardware |
+| Round button LED (velocity) | 0 off, 1 on, 2 blink | Verified on hardware |
 | RGB colours / brightness levels | **Not supported** on the original APC mini | The app does not offer them |
 
 The **APC mini mk2** (2022, RGB pads) uses a different protocol. The app
