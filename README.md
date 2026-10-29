@@ -150,6 +150,25 @@ move the real control. Changes take effect straight away; click **Save** (or
 * Mappings are locked while output is ON, so a stray click cannot change them
   mid-show. **Ctrl+S** (Cmd+S on a Mac) saves.
 
+### Testing the APC mini
+
+Click **Test APC mini** (output must be OFF). While a test runs, nothing is
+sent to Titan and the mapping ignores the controller. Pick a test in the blue bar:
+
+* **Light show:** every pad and button goes red, then green, then yellow,
+  then everything flashes, then coloured diagonal stripes move across the
+  grid while a light runs along the round buttons. It loops, so you can spot
+  a dead LED.
+* **Button test:** press every pad and button. Each lights up once pressed
+  (yellow or blinking while held), and the bar counts how many of the 81 you
+  have pressed. Shift has no light but still counts.
+* **Fader test:** push each fader fully up and fully down. The grid column
+  above it shows its level (the master fader uses the right-hand column), and
+  the round button under it lights once it has done both. The bar counts
+  checked faders.
+
+Click **Finish test** to go back to normal.
+
 ### What each button can do
 
 | Mode | What happens | sACN it sends |

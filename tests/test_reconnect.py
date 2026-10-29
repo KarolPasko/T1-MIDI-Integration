@@ -55,3 +55,24 @@ def test_blackout_and_timer_in_state(tmp_path, monkeypatch):
     core.set_output(False)
     assert core.state()["output_on_for"] is None
     core.shutdown()
+
+
+def test_hardware_test_takes_input_and_blocks_output(tmp_path, monkeypatch):
+    from apc_bridge.app_core import ActionError
+    import mido
+    import pytest
+    from apc_bridge.midi_events import event_from_message
+    core = make_core(tmp_path, monkeypatch, [ports.PortList([], [])])
+    core.start_test("buttons")
+    with pytest.raises(ActionError):
+        core.set_output(True)
+    core.events.put(event_from_message(mido.Message("note_on", note=64, velocity=127)))
+    core._tick()
+    assert core.state()["test"]["seen"] == [64]
+    assert core.engine.faders[0].mapping.enabled      # the fader on/off button did not fire
+    core.stop_test()
+    core.set_simulate_output(True)
+    core.set_output(True)
+    with pytest.raises(ActionError):
+        core.start_test("lights")
+    core.shutdown()
