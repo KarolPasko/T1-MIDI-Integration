@@ -32,7 +32,8 @@ def test_shipped_presets_match_the_code():
     folder = presets_dir()
     expected = {"All buttons momentary": all_buttons_preset(MOMENTARY),
                 "All buttons toggle": all_buttons_preset(TOGGLE),
-                "Faders only (basic)": BridgeConfig()}
+                "Faders only (basic)": BridgeConfig(),
+                "Titan WebAPI starter": cfgmod.titan_webapi_preset()}
     for name, cfg in expected.items():
         data = json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
         assert data == cfg.to_dict(), f"{name}.json is out of date"
@@ -51,7 +52,7 @@ def test_good_names():
 
 def test_save_list_load(tmp_path):
     lib = MappingLibrary(tmp_path)
-    assert [f["kind"] for f in lib.list()] == [PRESET] * 3
+    assert [f["kind"] for f in lib.list()] == [PRESET] * 4
     cfg = all_buttons_preset(TOGGLE)
     cfg.universe = 7
     lib.save(cfg, "Gig")

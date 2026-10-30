@@ -14,9 +14,9 @@ import threading
 import time
 from pathlib import Path
 
-from . import __version__, apc_mini, ports
+from . import __version__, apc_mini, ports, webapi
 from .bridge import BridgeEngine
-from .config import BridgeConfig, ConfigError
+from .config import TITAN, BridgeConfig, ConfigError
 from .hardware_test import HardwareTest
 from .library import PRESET, SAVED, MappingLibrary, check_name
 from .led_output import LedOutput, LedOutputError
@@ -100,6 +100,9 @@ class BridgeCore:
         self.midi_count = 0          # MIDI messages received, for the activity light
         self.output_on_since: float | None = None
         self.test: HardwareTest | None = None   # APC mini hardware test, only while output is OFF
+        self.titan: webapi.TitanClient | None = None   # only while output is ON and something uses the WebAPI
+        self.titan_check: dict | None = None
+        self.taps = webapi.TapTempo()
         self.dirty = False
         self._last_send = self._last_led = self._last_watchdog = 0.0
         self._stop = threading.Event()
@@ -146,9 +149,10 @@ class BridgeCore:
             if ev.is_cc:
                 self.dirty |= self.engine.handle_cc(ev.channel, ev.number, ev.value)
             elif ev.is_press:
-                self.dirty |= self.engine.handle_press(ev.number)
+                self.dirty |= self.engine.handle_press(ev.number, ev.timestamp)
             elif ev.is_release:
                 self.dirty |= self.engine.handle_release(ev.number)
+        self._send_titan()
         now = time.monotonic()
         if self.sender is not None:
             if (self.dirty and now - self._last_send >= MIN_GAP_S) or now - self._last_send >= KEEPALIVE_S:
@@ -167,6 +171,31 @@ class BridgeCore:
         if now - self._last_watchdog >= WATCHDOG_S:
             self._last_watchdog = now
             self._watchdog()
+
+    def _send_titan(self) -> None:
+        events = self.engine.take_titan_events()
+        if self.titan is None:
+            return
+        cfg = self.engine.config
+        for ev in events:
+            try:
+                if ev[0] == "fader":
+                    f = cfg.faders[ev[1]]
+                    if f.uses_webapi:
+                        self.titan.submit_fader(ev[1], webapi.fader_call(f.action, ev[2]))
+                else:
+                    b = cfg.button(ev[1])
+                    if b is None or b.mode != TITAN:
+                        continue
+                    if b.action["type"] == "tap_tempo":
+                        if ev[0] == "press":
+                            bpm = self.taps.tap(b.note, ev[2] if ev[2] is not None else time.time())
+                            if bpm is not None:
+                                self.titan.submit([webapi.speed_call(b.action, bpm)])
+                    else:
+                        self.titan.submit(webapi.button_calls(b.action, ev[0] == "press"))
+            except (webapi.ActionError, KeyError, IndexError) as exc:
+                log.error("Titan action skipped: %s", exc)
 
     def _update_leds(self) -> None:
         if not (self.leds.is_open and (self.engine.config.led_feedback or self.test)):
@@ -281,6 +310,10 @@ class BridgeCore:
                                              sock_factory=_NullSocket if self.simulate_output else None)
                 except SacnError as exc:
                     raise ActionError(str(exc)) from exc
+                if self._uses_webapi(cfg):
+                    self.titan = webapi.TitanClient(cfg.titan_host, cfg.titan_port, dry_run=self.simulate_output)
+                    log.info("Titan WebAPI actions go to %s:%d%s", cfg.titan_host, cfg.titan_port,
+                             " (TEST MODE: not sent)" if self.simulate_output else "")
                 self.engine.set_output_enabled(True)
                 self.output_on_since = time.monotonic()
                 self.dirty = True
@@ -289,10 +322,37 @@ class BridgeCore:
             elif not on and self.engine.output_enabled:
                 self.engine.set_output_enabled(False)
                 self.output_on_since = None
+                self._send_titan()     # e.g. the release of a flash that was still held
+                if self.titan is not None:
+                    self.titan.close(wait_s=0)
+                    self.titan = None
                 if self.sender is not None:
                     self.sender.stop(self.engine.dmx_frame())
                     self.sender = None
                 log.info("Output OFF (sACN stream terminated)")
+
+    @staticmethod
+    def _uses_webapi(cfg: BridgeConfig) -> bool:
+        return any(b.mode == TITAN for b in cfg.buttons) or any(f.uses_webapi for f in cfg.faders)
+
+    def check_titan(self) -> None:
+        """Ask Titan for its version (read-only), in the background; the answer appears in state()."""
+        with self.lock:
+            host, port = self.engine.config.titan_host, self.engine.config.titan_port
+            self.titan_check = {"busy": True, "ok": None, "text": f"Asking {host}:{port}…"}
+
+        def run():
+            try:
+                reply = webapi.check(host, port)
+                result = {"busy": False, "ok": True, "text": f"Titan answered: {reply[:200]}"}
+                log.info("Titan WebAPI check: %s", reply[:200])
+            except webapi.WebApiError as exc:
+                result = {"busy": False, "ok": False, "text": str(exc)}
+                log.warning("Titan WebAPI check failed: %s", exc)
+            with self.lock:
+                self.titan_check = result
+
+        threading.Thread(target=run, name="titan-check", daemon=True).start()
 
     def set_simulate_output(self, on: bool) -> None:
         with self.lock:
@@ -373,6 +433,7 @@ class BridgeCore:
         with self.lock:
             if bool(on) != self.engine.blackout:
                 self.engine.set_blackout(bool(on))
+                self._send_titan()
                 self.dirty = True
                 if on:
                     log.warning("BLACKOUT: every channel at zero")
@@ -433,6 +494,13 @@ class BridgeCore:
                 "output": {"enabled": e.output_enabled, "simulate": self.simulate_output,
                            "dest": self.sender.dest[0] if self.sender else None,
                            "packets": self.sender.packets_sent if self.sender else 0},
+                "titan": {"active": self.titan is not None,
+                          "sent": self.titan.sent if self.titan else 0,
+                          "errors": self.titan.errors if self.titan else 0,
+                          "error": self.titan.last_error if self.titan else None,
+                          "check": self.titan_check,
+                          "held": sorted(e.titan_held),
+                          "tempo": {str(n): bpm for n, bpm in self.taps.bpm.items()}},
                 "learning": e.learning,
                 "learned": list(learned) if learned else None,
                 "pressed": sorted(e.pressed),

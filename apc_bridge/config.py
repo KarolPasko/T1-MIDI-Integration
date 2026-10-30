@@ -11,7 +11,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-from . import apc_mini
+from . import apc_mini, webapi
 
 DEFAULT_PATH = Path("config.json")
 
@@ -22,7 +22,8 @@ TOGGLE = "toggle"                # press = ON level, press again = OFF level
 FADER_ENABLE = "fader_enable"    # switches one fader on/off
 OUTPUT_STATUS = "output_status"  # light only: lit while output is on, blinking while off
 BLACKOUT = "blackout"            # press: everything to zero; press again: release
-BUTTON_MODES = (UNUSED, MOMENTARY, TOGGLE, FADER_ENABLE, OUTPUT_STATUS, BLACKOUT)
+TITAN = "titan"                  # a Titan WebAPI action (Go, flash, palette...), see webapi.py
+BUTTON_MODES = (UNUSED, MOMENTARY, TOGGLE, FADER_ENABLE, OUTPUT_STATUS, BLACKOUT, TITAN)
 SENDING_MODES = (MOMENTARY, TOGGLE)
 
 BUTTON_NOTES = apc_mini.LED_NOTES + (apc_mini.SHIFT_NOTE,)
@@ -41,11 +42,21 @@ class FaderMapping:
     enabled: bool = True
     min_percent: float = 0.0    # output when the fader is at the bottom
     max_percent: float = 100.0  # output when the fader is at the top
+    action: dict = field(default_factory=dict)  # a Titan WebAPI fader action; empty = sACN channel
+
+    @property
+    def uses_webapi(self) -> bool:
+        return bool(self.action)
 
     def validate(self) -> None:
         if not 0 <= self.cc <= 127:
             raise ConfigError(f"CC must be 0-127, got {self.cc}")
-        if not 1 <= self.address <= 512:
+        if self.uses_webapi:
+            try:
+                self.action = webapi.normalise(self.action, "fader")
+            except webapi.ActionError as exc:
+                raise ConfigError(f"{self.label}: {exc}") from exc
+        elif not 1 <= self.address <= 512:
             raise ConfigError(f"{self.label}: sACN channel must be 1-512, got {self.address}")
         if not 0 <= self.min_percent <= 100 or not 0 <= self.max_percent <= 100:
             raise ConfigError(f"{self.label}: min/max must be 0-100%")
@@ -65,6 +76,7 @@ class ButtonMapping:
     active_led: int = 1          # LED state while ON (pressed / toggled on)
     idle_led: int = 0            # LED state while mapped but OFF
     group: int = 0               # toggles only: 1-99 = turning this on turns the rest of the group off
+    action: dict = field(default_factory=dict)  # titan mode: the WebAPI action
 
     @property
     def name(self) -> str:
@@ -80,6 +92,11 @@ class ButtonMapping:
                 raise ConfigError(f"{self.name}: sACN channel must be 1-512")
             if not (0 <= self.on_percent <= 100 and 0 <= self.off_percent <= 100):
                 raise ConfigError(f"{self.name}: on/off levels must be 0-100%")
+        if self.mode == TITAN:
+            try:
+                self.action = webapi.normalise(self.action, "button")
+            except webapi.ActionError as exc:
+                raise ConfigError(f"{self.name}: {exc}") from exc
         if not 0 <= self.group <= MAX_GROUP:
             raise ConfigError(f"{self.name}: group must be 0 (none) to {MAX_GROUP}")
         if self.mode == FADER_ENABLE and not 0 <= self.fader < fader_count:
@@ -123,6 +140,8 @@ class BridgeConfig:
     max_output_percent: float = 100.0   # overall cap on every fader and button
     led_feedback: bool = True
     show_meters: bool = False           # level meters on UNUSED grid pads above each fader
+    titan_host: str = "127.0.0.1"       # where Titan's WebAPI is (for Titan actions)
+    titan_port: int = webapi.DEFAULT_PORT
     faders: list[FaderMapping] = field(default_factory=default_faders)
     buttons: list[ButtonMapping] = field(default_factory=default_buttons)
 
@@ -137,6 +156,12 @@ class BridgeConfig:
             raise ConfigError(f"Universe must be 1-63999, got {self.universe}")
         if not 0 <= self.max_output_percent <= 100:
             raise ConfigError("Max output must be 0-100%")
+        host = self.titan_host.strip()
+        if not host or any(c in host for c in " /?#@"):
+            raise ConfigError("Titan address must be an IP address or computer name, e.g. 192.168.1.20")
+        self.titan_host = host
+        if not 1 <= self.titan_port <= 65535:
+            raise ConfigError("Titan WebAPI port must be 1-65535")
         ccs = [f.cc for f in self.faders]
         if len(set(ccs)) != len(ccs):
             raise ConfigError("Two mappings use the same fader")
@@ -147,7 +172,7 @@ class BridgeConfig:
             f.validate()
         for b in self.buttons:
             b.validate(len(self.faders))
-        senders = [(f.address, f.label or apc_mini.describe_cc(f.cc)) for f in self.faders]
+        senders = [(f.address, f.label or apc_mini.describe_cc(f.cc)) for f in self.faders if not f.uses_webapi]
         senders += [(b.address, b.name) for b in self.buttons if b.mode in SENDING_MODES]
         used: dict[int, str] = {}
         for address, name in senders:
@@ -166,6 +191,7 @@ class BridgeConfig:
                 enabled=bool(f.get("enabled", True)),
                 min_percent=float(f.get("min_percent", 0)),
                 max_percent=float(f.get("max_percent", 100)),
+                action=dict(f.get("action") or {}),
             ) for f in data.get("faders", [])] or default_faders()
             buttons = {b.note: b for b in default_buttons()}
             for b in buttons.values():  # defaults for faders this file does not have
@@ -181,11 +207,14 @@ class BridgeConfig:
                     fader=int(raw.get("fader", 0)),
                     active_led=int(raw.get("active_led", base.active_led)),
                     idle_led=int(raw.get("idle_led", base.idle_led)),
-                    group=int(raw.get("group", 0)))
+                    group=int(raw.get("group", 0)),
+                    action=dict(raw.get("action") or {}))
             cfg = cls(universe=int(data.get("universe", 10)), unicast_ip=data.get("unicast_ip") or None,
                       max_output_percent=float(data.get("max_output_percent", 100)),
                       led_feedback=bool(data.get("led_feedback", True)),
                       show_meters=bool(data.get("show_meters", False)),
+                      titan_host=str(data.get("titan_host") or "127.0.0.1"),
+                      titan_port=int(data.get("titan_port", webapi.DEFAULT_PORT)),
                       faders=faders, buttons=list(buttons.values()))
         except (KeyError, TypeError, ValueError, AttributeError) as exc:
             raise ConfigError(f"Settings are not valid: {exc}") from exc
@@ -241,5 +270,38 @@ def all_buttons_preset(mode: str) -> BridgeConfig:
         else:
             b.address = b.note
             b.active_led, b.idle_led = int(apc_mini.RoundLed.ON), int(apc_mini.RoundLed.OFF)
+    cfg.validate()
+    return cfg
+
+
+def titan_webapi_preset() -> BridgeConfig:
+    """A starting point for the Titan WebAPI (only where Titan answers it).
+
+    Faders 1-8 and the master fader set playbacks 1-9 (by Titan user number).
+    Pad rows from the bottom: Go, Go back, Flash (held), Release, for
+    playbacks 1-8. Bottom buttons: faders on/off as usual. Right-hand column:
+    output status at the top, Release all, Clear programmer, Blackout at the
+    bottom.
+    """
+    def handle(n: int) -> dict:
+        return {"handle_type": "userNumber", "handle": str(n)}
+
+    cfg = BridgeConfig()
+    for i, f in enumerate(cfg.faders):
+        f.label = f"Playback {i + 1}"
+        f.action = {"type": "playback_level", **handle(i + 1)}
+    green, yellow, red = int(apc_mini.GridLed.GREEN), int(apc_mini.GridLed.YELLOW), int(apc_mini.GridLed.RED)
+    rows = [("go", green, yellow), ("go_back", green, yellow), ("flash", green, red), ("release", green, red)]
+    for row, (action, active, idle) in enumerate(rows):
+        for col in range(8):
+            b = cfg.button(apc_mini.grid_note(row, col))
+            b.mode, b.action, b.active_led, b.idle_led = TITAN, {"type": action, **handle(col + 1)}, active, idle
+    scene = apc_mini.SCENE_BUTTON_NOTES
+    on = int(apc_mini.RoundLed.ON)
+    for note, action in ((scene[1], "release_all"), (scene[2], "clear")):
+        b = cfg.button(note)
+        b.mode, b.action, b.active_led, b.idle_led = TITAN, {"type": action}, on, 0
+    b = cfg.button(scene[6])
+    b.mode, b.active_led, b.idle_led = BLACKOUT, on, 0
     cfg.validate()
     return cfg

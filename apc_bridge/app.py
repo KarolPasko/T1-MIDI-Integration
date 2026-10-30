@@ -46,7 +46,7 @@ def self_test() -> int:
     from .web_server import web_dir
 
     presets = sorted(p.stem for p in presets_dir().glob("*.json"))
-    assert len(presets) == 3, presets
+    assert len(presets) == 4, presets
     assert (web_dir() / "index.html").exists()
     print("self-test OK:", ", ".join(presets))
     return 0

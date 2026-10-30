@@ -1,0 +1,1315 @@
+{
+  "universe": 10,
+  "unicast_ip": null,
+  "max_output_percent": 100.0,
+  "led_feedback": true,
+  "show_meters": false,
+  "titan_host": "127.0.0.1",
+  "titan_port": 4430,
+  "faders": [
+    {
+      "cc": 48,
+      "label": "Playback 1",
+      "address": 1,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "1"
+      }
+    },
+    {
+      "cc": 49,
+      "label": "Playback 2",
+      "address": 2,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "2"
+      }
+    },
+    {
+      "cc": 50,
+      "label": "Playback 3",
+      "address": 3,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "3"
+      }
+    },
+    {
+      "cc": 51,
+      "label": "Playback 4",
+      "address": 4,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "4"
+      }
+    },
+    {
+      "cc": 52,
+      "label": "Playback 5",
+      "address": 5,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "5"
+      }
+    },
+    {
+      "cc": 53,
+      "label": "Playback 6",
+      "address": 6,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "6"
+      }
+    },
+    {
+      "cc": 54,
+      "label": "Playback 7",
+      "address": 7,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "7"
+      }
+    },
+    {
+      "cc": 55,
+      "label": "Playback 8",
+      "address": 8,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "8"
+      }
+    },
+    {
+      "cc": 56,
+      "label": "Playback 9",
+      "address": 9,
+      "enabled": true,
+      "min_percent": 0.0,
+      "max_percent": 100.0,
+      "action": {
+        "type": "playback_level",
+        "handle_type": "userNumber",
+        "handle": "9"
+      }
+    }
+  ],
+  "buttons": [
+    {
+      "note": 0,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go",
+        "handle_type": "userNumber",
+        "handle": "1"
+      }
+    },
+    {
+      "note": 1,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go",
+        "handle_type": "userNumber",
+        "handle": "2"
+      }
+    },
+    {
+      "note": 2,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go",
+        "handle_type": "userNumber",
+        "handle": "3"
+      }
+    },
+    {
+      "note": 3,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go",
+        "handle_type": "userNumber",
+        "handle": "4"
+      }
+    },
+    {
+      "note": 4,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go",
+        "handle_type": "userNumber",
+        "handle": "5"
+      }
+    },
+    {
+      "note": 5,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go",
+        "handle_type": "userNumber",
+        "handle": "6"
+      }
+    },
+    {
+      "note": 6,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go",
+        "handle_type": "userNumber",
+        "handle": "7"
+      }
+    },
+    {
+      "note": 7,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go",
+        "handle_type": "userNumber",
+        "handle": "8"
+      }
+    },
+    {
+      "note": 8,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go_back",
+        "handle_type": "userNumber",
+        "handle": "1"
+      }
+    },
+    {
+      "note": 9,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go_back",
+        "handle_type": "userNumber",
+        "handle": "2"
+      }
+    },
+    {
+      "note": 10,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go_back",
+        "handle_type": "userNumber",
+        "handle": "3"
+      }
+    },
+    {
+      "note": 11,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go_back",
+        "handle_type": "userNumber",
+        "handle": "4"
+      }
+    },
+    {
+      "note": 12,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go_back",
+        "handle_type": "userNumber",
+        "handle": "5"
+      }
+    },
+    {
+      "note": 13,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go_back",
+        "handle_type": "userNumber",
+        "handle": "6"
+      }
+    },
+    {
+      "note": 14,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go_back",
+        "handle_type": "userNumber",
+        "handle": "7"
+      }
+    },
+    {
+      "note": 15,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {
+        "type": "go_back",
+        "handle_type": "userNumber",
+        "handle": "8"
+      }
+    },
+    {
+      "note": 16,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "flash",
+        "handle_type": "userNumber",
+        "handle": "1"
+      }
+    },
+    {
+      "note": 17,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "flash",
+        "handle_type": "userNumber",
+        "handle": "2"
+      }
+    },
+    {
+      "note": 18,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "flash",
+        "handle_type": "userNumber",
+        "handle": "3"
+      }
+    },
+    {
+      "note": 19,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "flash",
+        "handle_type": "userNumber",
+        "handle": "4"
+      }
+    },
+    {
+      "note": 20,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "flash",
+        "handle_type": "userNumber",
+        "handle": "5"
+      }
+    },
+    {
+      "note": 21,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "flash",
+        "handle_type": "userNumber",
+        "handle": "6"
+      }
+    },
+    {
+      "note": 22,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "flash",
+        "handle_type": "userNumber",
+        "handle": "7"
+      }
+    },
+    {
+      "note": 23,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "flash",
+        "handle_type": "userNumber",
+        "handle": "8"
+      }
+    },
+    {
+      "note": 24,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "release",
+        "handle_type": "userNumber",
+        "handle": "1"
+      }
+    },
+    {
+      "note": 25,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "release",
+        "handle_type": "userNumber",
+        "handle": "2"
+      }
+    },
+    {
+      "note": 26,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "release",
+        "handle_type": "userNumber",
+        "handle": "3"
+      }
+    },
+    {
+      "note": 27,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "release",
+        "handle_type": "userNumber",
+        "handle": "4"
+      }
+    },
+    {
+      "note": 28,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "release",
+        "handle_type": "userNumber",
+        "handle": "5"
+      }
+    },
+    {
+      "note": 29,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "release",
+        "handle_type": "userNumber",
+        "handle": "6"
+      }
+    },
+    {
+      "note": 30,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "release",
+        "handle_type": "userNumber",
+        "handle": "7"
+      }
+    },
+    {
+      "note": 31,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 3,
+      "group": 0,
+      "action": {
+        "type": "release",
+        "handle_type": "userNumber",
+        "handle": "8"
+      }
+    },
+    {
+      "note": 32,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 33,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 34,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 35,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 36,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 37,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 38,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 39,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 40,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 41,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 42,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 43,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 44,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 45,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 46,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 47,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 48,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 49,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 50,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 51,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 52,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 53,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 54,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 55,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 56,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 57,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 58,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 59,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 60,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 61,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 62,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 63,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 5,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 64,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 65,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 1,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 66,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 2,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 67,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 3,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 68,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 4,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 69,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 5,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 70,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 6,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 71,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 7,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 82,
+      "mode": "output_status",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 83,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {
+        "type": "release_all"
+      }
+    },
+    {
+      "note": 84,
+      "mode": "titan",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {
+        "type": "clear"
+      }
+    },
+    {
+      "note": 85,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 86,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 87,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 88,
+      "mode": "blackout",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 89,
+      "mode": "fader_enable",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 8,
+      "active_led": 1,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    },
+    {
+      "note": 98,
+      "mode": "unused",
+      "label": "",
+      "address": 0,
+      "on_percent": 100.0,
+      "off_percent": 0.0,
+      "fader": 0,
+      "active_led": 0,
+      "idle_led": 0,
+      "group": 0,
+      "action": {}
+    }
+  ]
+}
