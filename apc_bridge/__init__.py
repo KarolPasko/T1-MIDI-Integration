@@ -1,3 +1,3 @@
 """Free APC mini <-> Avolites Titan Go bridge, by Karol Pasko."""
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"

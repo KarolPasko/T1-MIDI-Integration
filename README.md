@@ -16,6 +16,13 @@ incoming value like a fader. This was verified with Titan Go v18.0 and a T1 on
 APC mini fader --MIDI--> this app --sACN (one channel per fader)--> Titan Go trigger --> playback level
 ```
 
+Since version 1.3.0 a button or fader can also send a **Titan WebAPI**
+command (Go, Go to cue, Flash, Release, palettes, masters and more). This only
+works on a Titan that answers the WebAPI: Avolites documents the WebAPI as not
+available on Titan One or T1, and the app never tries to get around that. Use
+**Output settings → Check connection** to see what your Titan replies. See
+[Titan WebAPI actions](#titan-webapi-actions).
+
 ## Getting the app
 
 **Easiest: download the ready-made .exe.** Every change to `main` is built
@@ -180,6 +187,7 @@ Click **Finish test** to go back to normal.
 | Fader on/off | Switches one fader on/off (the bottom row and bottom-right button in "Faders only") | – |
 | Output status light | Lit while output is ON, blinking while OFF (the top-right button in "Faders only") | – |
 | Blackout | Press: every channel to 0. Press again: release. Blinks during blackout | 0 on every channel |
+| Titan WebAPI action | Sends a Titan command over the network instead of sACN (see below). Lit while held | – |
 
 Each momentary/toggle button gets its own sACN channel (a free one is picked
 when you choose the mode) and its own **light when ON** and **light when OFF**
@@ -193,6 +201,58 @@ visible at a glance.
 
 Buttons only react while output is ON, so pressing them while output is off
 cannot fire anything later.
+
+### Titan WebAPI actions
+
+Below the APC mini picture is an **Actions** palette. Drag an action onto a
+pad, round button or fader, or select a control and click an action. Orange
+actions are Titan button commands, purple ones are Titan fader commands, and
+blue/green ones are this app's own modes and sACN. A dropped action guesses
+the playback from where it lands (pad column 3 = playback 3), which you can
+change in the editor on the right.
+
+| Action | What it does (Titan API command) |
+|---|---|
+| Go | Plays the next cue; continues a paused playback (CueLists.Play) |
+| Go back | Fires the cue before the live one (CueLists.GoBack) |
+| Pause | Pauses; press again while paused to go back (CueLists.Pause) |
+| Go to cue | Sets the next cue number, then plays it (CueLists.SetNextCue + Play) |
+| Set next cue | Sets the next cue number without playing it (CueLists.SetNextCue) |
+| Fire at level | Fires a playback at a chosen level (Playbacks.FirePlaybackAtLevel) |
+| Toggle on/off | Toggles a playback (Playbacks.ToggleLatchPlayback) |
+| Flash / Swop (while held) | Flash or swop while the button is held (Playbacks.Flash/Swop, Clear… on release) |
+| Release / Release all | Kills one playback or all (Playbacks.KillPlayback / KillAllPlaybacks) |
+| Palette | Recalls a palette (Palette.ApplyPalette) |
+| Macro | Runs a macro by its id (Macros.Run) |
+| Clear programmer | Clears the programmer and selection (Programmer.Editor.ClearAll) |
+| Master flash / DBO (held) | Flashes a master to full, or to zero, while held (Masters.Flash / DeadBlackOut, ClearFlash on release) |
+| Fader: Playback level | The fader sets a playback's level (Playbacks.SetPlaybackLevel) |
+| Fader: Master level | The fader sets a master (Masters.SetMaster) |
+| Fader: Group intensity | The fader sets a group's intensity (Group.SetGroupFaderLevel) |
+| Fader: Speed master (BPM) | The fader sets a speed master between two values (Masters.SetSpeed) |
+| Fader: Programmer wheel ⚠ | Experimental: sets wheel A–E for the selected fixtures, like an encoder |
+
+Playbacks are picked by their Titan **user number** by default (a location
+such as `playback_2_1` or a Titan ID also works).
+
+Things to know:
+
+* These commands come from the Avolites Titan API reference (version 18.0).
+  **None has been tried on a real rig yet.** Try each one before a show.
+* The programmer wheel action uses the documented property URL, but Avolites
+  does not document how the value is sent, so it may do nothing.
+* Titan actions follow the same safety rules as sACN: nothing is sent while
+  output is OFF, faders need pickup, and settings are locked while output is
+  ON. Blackout pulls WebAPI playback, master and group faders to 0 and
+  releases held flashes, but it does not undo a Go.
+* **Titan WebAPI** in Output settings is the address of the computer running
+  Titan (127.0.0.1 = this computer) and port 4430. On a Mac, enter the Titan
+  PC's IP address.
+* The **Titan WebAPI starter** file sets faders 1–8 and the master fader to
+  playbacks 1–9, and the pad rows from the bottom to Go, Go back, Flash and
+  Release for playbacks 1–8.
+* The WebAPI light in the top bar flashes when a command goes out, and a red
+  "Titan WebAPI: error" pill shows if Titan does not answer (hover for why).
 
 ### One-time setup in Titan Go
 

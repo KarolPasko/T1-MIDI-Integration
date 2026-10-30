@@ -20,7 +20,7 @@
     background: var(--bg); border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px; }
   input[type=number] { width: 80px; }
   .field input[type=text] { width: 100%; }
-  #ip.field-ip { width: 110px; }
+  #ip.field-ip, #titanHost.field-ip { width: 130px; }
   label { color: var(--muted); }
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .hint { color: var(--muted); font-size: 12px; }
@@ -120,6 +120,27 @@
   #testBar .ttab.active { background: #fff; color: #17406b; }
   #testStep { font-size: 16px; margin: 0 8px; }
   #testStop { margin-left: auto; }
+  /* drag-and-drop action palette */
+  #palette .grp { margin: 8px 0 2px; font-size: 12px; color: var(--muted); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .chip { padding: 4px 9px; border-radius: 14px; font-size: 12px; cursor: grab; user-select: none;
+          border: 1px solid var(--line); background: #2a2f3a; }
+  .chip.btn-app { background: #23324a; border-color: #36507a; }
+  .chip.btn-titan { background: #3b2a12; border-color: #8a5a17; }
+  .chip.fdr-app { background: #1f3b2b; border-color: #2f6b47; }
+  .chip.fdr-titan { background: #3b1f3b; border-color: #7a3f7a; }
+  .chip small { opacity: .7; margin-left: 3px; }
+  .chip:active { cursor: grabbing; }
+  #palette.locked .chip { opacity: .4; cursor: not-allowed; }
+  .pad.drop, .fader.drop { outline: 3px dashed #fff; outline-offset: 1px; }
+  .fader.titan .t { color: #e3a5ff; }
+  .pad.titan .lbl { color: #ffe1b0; }
+  .pad.c-yellow .lbl, .pad.c-green .lbl { color: #111; text-shadow: none; font-weight: 600; }
+  .field > * { min-width: 0; } .field select { max-width: 100%; }
+  .warnnote { background: #3d2c0c; border: 1px solid #8a5a17; border-radius: 6px; padding: 6px 8px; font-size: 12px;
+              margin: 6px 0; color: #ffd99a; }
+  #titanCheckOut { font-size: 12px; margin-top: 4px; }
+  #titanCheckOut.ok { color: #8ef0a5; } #titanCheckOut.bad { color: #ff9b9b; }
   @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
   @media (max-width: 760px) { #start .box { grid-template-columns: 1fr; } }
 </style>
@@ -175,7 +196,8 @@
   </span>
   <span class="row">
     <span id="activity" title="Flashes when the APC mini sends something / when sACN is sent">
-      <span class="dot" id="midiDot"></span>MIDI <span class="dot" id="sacnDot"></span>sACN</span>
+      <span class="dot" id="midiDot"></span>MIDI <span class="dot" id="sacnDot"></span>sACN
+      <span id="webapiAct"><span class="dot" id="webapiDot"></span>WebAPI</span></span>
     <span id="statusText">OUTPUT OFF</span><span id="timer"></span>
     <button id="blackoutBtn" title="Every channel to zero (Esc key)">BLACKOUT</button>
     <button id="outBtn">Switch output ON</button>
@@ -191,6 +213,7 @@
   <button id="testBtn" title="Light show, button test and fader test. Output must be OFF.">Test APC mini</button>
   <span id="inPill" class="pill idle">input: off</span>
   <span id="ledPill" class="pill idle">LEDs: off</span>
+  <span id="titanPill" class="pill idle" style="display:none"></span>
 </div>
 <div id="blackoutBanner" class="banner">BLACKOUT – every channel is at 0. Faders and buttons are ignored.
   <button id="releaseBtn">Release blackout</button>
@@ -215,8 +238,9 @@
   <section class="card">
     <div id="apc"></div>
     <div class="faders" id="faders"></div>
-    <div class="legend">Click a pad, button or fader to change it. Colours are what the app sends to the
-      APC mini's lights, not Titan's state.</div>
+    <div class="legend">Click a pad, button or fader to change it, or drag an action onto it. Colours are what the app
+      sends to the APC mini's lights, not Titan's state.</div>
+    <div id="palette" style="margin-top: 14px"></div>
   </section>
 
   <aside>
@@ -240,6 +264,11 @@
         <div class="field"><label>Pad lights</label><input type="checkbox" id="ledFb"></div>
         <div class="field"><label>Level meters</label>
           <span><input type="checkbox" id="meters"> <span class="hint">on unused pads above faders</span></span></div>
+        <div class="field"><label>Titan WebAPI</label>
+          <span class="row"><input type="text" id="titanHost" class="field-ip" title="IP of the computer running Titan">
+            : <input type="number" id="titanPort" min="1" max="65535" style="width:70px"></span></div>
+        <div class="field"><label></label><span><button id="titanCheck">Check connection</button>
+          <div id="titanCheckOut" class="hint">Only used by Titan actions. 127.0.0.1 = Titan on this computer.</div></span></div>
         <div class="field"><label>Test mode</label>
           <span><input type="checkbox" id="simOut"> <span class="hint">calculate levels but send nothing</span></span></div>
       </details>
@@ -255,7 +284,10 @@ const TOKEN = "__TOKEN__";
 const TRACK = [64,65,66,67,68,69,70,71], SCENE = [82,83,84,85,86,87,88,89], SHIFT = 98;
 const MODES = { unused: "Not used", momentary: "Momentary (on while held)", toggle: "Toggle (press on / off)",
                 fader_enable: "Fader on/off", output_status: "Output status light",
-                blackout: "Blackout (press: all to zero, again: release)" };
+                blackout: "Blackout (press: all to zero, again: release)", titan: "Titan WebAPI action" };
+const TITAN = __TITAN_ACTIONS__;
+const HANDLE_TYPES = [["userNumber", "Playback / handle user number"], ["location", "Location (e.g. playback_2_1)"],
+                      ["titanId", "Titan ID"]];
 const SENDING = new Set(["momentary", "toggle"]);
 const GRID_LEDS = [[0,"Off"],[1,"Green"],[2,"Green blink"],[3,"Red"],[4,"Red blink"],[5,"Yellow"],[6,"Yellow blink"]];
 const kind = n => n < 64 ? "grid" : n <= 71 ? "track" : (n >= 82 && n <= 89) ? "scene" : "shift";
@@ -301,6 +333,7 @@ const PRESET_INFO = {
   "All buttons momentary": "Every pad and button is on while held. Pads red when off, green when on.",
   "All buttons toggle": "Every pad and button latches on/off. Pads red when off, green when on.",
   "Faders only (basic)": "Just the 9 faders; the bottom buttons switch faders on/off.",
+  "Titan WebAPI starter": "Faders set playbacks 1-9 over the WebAPI. Pads: Go, Go back, Flash, Release for playbacks 1-8. Needs a Titan that answers the WebAPI.",
 };
 function renderStart() {
   const show = S && (!S.current || startForced);
@@ -374,6 +407,7 @@ function makePad(n) {
   el.innerHTML = '<span class="lbl"></span>';
   el.title = describe(n);
   el.onclick = () => select({ type: "button", id: n });
+  dropTarget(el, { type: "button", id: n });
   padEls[n] = el;
   return outer;
 }
@@ -390,6 +424,7 @@ function buildApc() {
     d.innerHTML = `<div class="t">${name}</div><div class="track"><div class="phys"></div><div class="outm"></div></div>
                    <div class="o">0%</div><div class="st"></div>`;
     d.onclick = () => select({ type: "fader", id: i });
+    dropTarget(d, { type: "fader", id: i });
     $("faders").appendChild(d); faderEls.push(d);
   });
 }
@@ -402,7 +437,7 @@ function ledClass(n, s) {
 
 const fmtTime = t => { const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60;
   return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(sec).padStart(2, "0"); };
-let lastMidi = null, lastPackets = null;
+let lastMidi = null, lastPackets = null, lastTitan = null;
 function flash(id, changed) { $(id).classList.toggle("flash", changed); }
 function render() {
   if (!S) return;
@@ -411,6 +446,18 @@ function render() {
   $("timer").textContent = S.output_on_for != null ? " " + fmtTime(S.output_on_for) : "";
   flash("midiDot", lastMidi !== null && S.midi_count !== lastMidi); lastMidi = S.midi_count;
   flash("sacnDot", on && lastPackets !== null && out.packets !== lastPackets); lastPackets = out.packets;
+  const ti = S.titan, usesTitan = !!cfg && (cfg.buttons.some(b => b.mode === "titan") || cfg.faders.some(isTitanFader));
+  flash("webapiDot", ti.active && lastTitan !== null && ti.sent !== lastTitan); lastTitan = ti.sent;
+  $("webapiAct").style.display = usesTitan ? "" : "none";
+  $("titanPill").style.display = usesTitan ? "" : "none";
+  $("titanPill").textContent = !ti.active ? "Titan WebAPI: idle" : ti.error ? "Titan WebAPI: error"
+    : `Titan WebAPI: ${ti.sent} sent`;
+  $("titanPill").className = "pill " + (!ti.active ? "idle" : ti.error ? "bad" : "ok");
+  $("titanPill").title = ti.error || (cfg ? `${cfg.titan_host}:${cfg.titan_port}` : "");
+  const chk = ti.check;
+  if (chk) { $("titanCheckOut").textContent = chk.text; $("titanCheckOut").className = chk.ok === null ? "hint" : chk.ok ? "ok" : "bad"; }
+  $("titanCheck").disabled = !!(chk && chk.busy);
+  $("palette").classList.toggle("locked", on);
   $("blackoutBanner").style.display = S.blackout ? "block" : "none";
   $("blackoutBtn").disabled = !cur || S.blackout;
   $("lostBanner").style.display = S.apc_lost ? "block" : "none";
@@ -448,7 +495,8 @@ function render() {
     el.className = [el.dataset.base, ledClass(note, leds[n] || 0), pressed.has(note) ? "pressed" : "",
                     selected.type === "button" && selected.id === note ? "selected" : ""].join(" ");
     el.querySelector(".lbl").textContent = b && b.mode !== "unused" && kind(note) === "grid"
-      ? (b.label || "") + (b.mode === "toggle" && b.group ? ` [G${b.group}]` : "") : "";
+      ? (b.label || (b.mode === "titan" ? actionText(b.action) : "")) + (b.mode === "toggle" && b.group ? ` [G${b.group}]` : "") : "";
+    el.classList.toggle("titan", !!b && b.mode === "titan");
   }
   S.faders.forEach((f, i) => {
     const el = faderEls[i];
@@ -466,7 +514,12 @@ function render() {
     else if (!on) { st.textContent = ""; st.className = "st"; }
     else if (f.picked_up) { st.textContent = "LIVE"; st.className = "st live"; }
     else { st.textContent = `Pickup ${Math.round(f.target / 2.55)}%`; st.className = "st wait"; }
-    if (cfg && cfg.faders[i]) el.querySelector(".t").textContent = cfg.faders[i].label || FADER_NAMES[i];
+    if (cfg && cfg.faders[i]) {
+      const fm = cfg.faders[i], t = isTitanFader(fm);
+      el.querySelector(".t").textContent = fm.label || (t ? actionText(fm.action) : FADER_NAMES[i]);
+      el.querySelector(".t").title = t ? "Titan WebAPI: " + actionText(fm.action) : "sACN channel " + fm.address;
+      el.classList.toggle("titan", t);
+    }
   });
 }
 
@@ -485,15 +538,21 @@ function renderEditor() {
   if (!cfg) { ed.innerHTML = ""; return; }
   const bind = (id, fn, ev = "oninput") => { if ($(id)) $(id)[ev] = fn; };
   if (selected.type === "fader") {
-    const f = cfg.faders[selected.id];
+    const f = cfg.faders[selected.id], t = isTitanFader(f);
     $("edTitle").textContent = FADER_NAMES[selected.id];
+    const ctl = `<select id="e_ctl"><option value="">sACN channel (Titan trigger)</option>` +
+      Object.entries(TITAN).filter(([, a]) => a.kind === "fader").map(([k, a]) =>
+        `<option value="${k}" ${t && f.action.type === k ? "selected" : ""}>Titan WebAPI: ${a.label}</option>`).join("") + "</select>";
     ed.innerHTML =
+      field("Controls", ctl) +
       field("Name", `<input type="text" id="e_label" value="${esc(f.label)}">`) +
-      field("sACN channel", `<input type="number" id="e_addr" min="1" max="512" value="${f.address}">`) +
+      (t ? actionFields(f.action, "fader") : field("sACN channel", `<input type="number" id="e_addr" min="1" max="512" value="${f.address}">`)) +
       field("On", `<input type="checkbox" id="e_en" ${f.enabled ? "checked" : ""}>`);
+    bind("e_ctl", e => { assignFader(selected.id, e.target.value); renderEditor(); }, "onchange");
     bind("e_label", e => { f.label = e.target.value; changed(); });
     bind("e_addr", e => { f.address = +e.target.value; changed(); });
     bind("e_en", e => { f.enabled = e.target.checked; changed(); }, "onchange");
+    if (t) bindAction(f.action);
     render();
     return;
   }
@@ -516,6 +575,15 @@ function renderEditor() {
     html += `<details><summary>Levels</summary>
       ${field("On level %", `<input type="number" id="e_on" min="0" max="100" value="${b.on_percent}">`)}
       ${field("Off level %", `<input type="number" id="e_off" min="0" max="100" value="${b.off_percent}">`)}</details>`;
+  } else if (b.mode === "titan") {
+    html += field("Titan action", `<select id="e_act">` + Object.entries(TITAN).filter(([, a]) => a.kind === "button")
+      .map(([k, a]) => `<option value="${k}" ${b.action.type === k ? "selected" : ""}>${a.group}: ${a.label}</option>`).join("") + "</select>");
+    html += field("Name", `<input type="text" id="e_label" value="${esc(b.label)}" placeholder="${esc(actionText(b.action))}">`);
+    html += actionFields(b.action, "button");
+    if (n !== SHIFT) {
+      html += field("Light", ledSel("e_iled", b.idle_led), "when not pressed");
+      html += field("Light when pressed", ledSel("e_aled", b.active_led));
+    }
   } else if (b.mode === "fader_enable") {
     html += field("Fader", `<select id="e_fader">` + FADER_NAMES.map((t, i) =>
       `<option value="${i}" ${b.fader === i ? "selected" : ""}>${t}</option>`).join("") + "</select>",
@@ -528,11 +596,9 @@ function renderEditor() {
     if (kind(n) === "grid") html += field("Blink colour", ledSel("e_aled", b.active_led));
   }
   ed.innerHTML = html;
-  bind("e_mode", e => {
-    b.mode = e.target.value;
-    if (SENDING.has(b.mode) && (!(b.address >= 1) || usedChannels(b).has(b.address))) b.address = nextFree(b);
-    changed(); renderEditor();
-  }, "onchange");
+  bind("e_mode", e => { assignButton(n, e.target.value === "titan" ? "titan:go" : e.target.value); renderEditor(); }, "onchange");
+  bind("e_act", e => { assignButton(n, "titan:" + e.target.value); renderEditor(); }, "onchange");
+  if (b.mode === "titan") bindAction(b.action);
   bind("e_label", e => { b.label = e.target.value; changed(); });
   bind("e_addr", e => { b.address = +e.target.value; changed(); });
   bind("e_group", e => { b.group = +e.target.value; changed(); render(); });
@@ -545,6 +611,155 @@ function renderEditor() {
 }
 function select(sel) { selected = sel; renderEditor(); }
 
+/* ---------- Titan WebAPI actions ---------- */
+const isTitanFader = f => !!(f && f.action && f.action.type);
+function actionText(a) {
+  const spec = a && TITAN[a.type];
+  if (!spec) return "";
+  if (a.type === "wheel") return "Wheel " + (a.wheel || "A");
+  let t = spec.label.replace(" (while held)", "").replace(" (held)", "");
+  if (spec.handle) t += " " + (a.handle_type === "userNumber" ? "PB" : "") + (a.handle || "");
+  if (a.cue != null && (a.type === "cue_go" || a.type === "set_next_cue")) t += " Q" + a.cue;
+  if (a.type === "macro") t += " " + (a.macro || "");
+  return t;
+}
+function actionFields(a, k) {
+  const spec = TITAN[a.type] || {}, ps = spec.params || [];
+  let h = "";
+  if (spec.handle) {
+    h += field("Handle by", `<select id="a_ht">` + HANDLE_TYPES.map(([v, t]) =>
+      `<option value="${v}" ${a.handle_type === v ? "selected" : ""}>${t}</option>`).join("") + "</select>");
+    h += field(a.handle_type === "location" ? "Location" : a.handle_type === "titanId" ? "Titan ID" : "User number",
+      `<input type="text" id="a_h" value="${esc(a.handle)}">`,
+      a.handle_type === "userNumber" ? "The playback's user number in Titan (Set User Number)." : "");
+  }
+  if (ps.includes("cue")) h += field("Cue number", `<input type="number" id="a_cue" min="0.01" step="any" value="${a.cue ?? 1}">`);
+  if (ps.includes("level")) h += field("Level %", `<input type="number" id="a_level" min="0" max="100" value="${a.level ?? 100}">`);
+  if (ps.includes("palette_times")) h += field("Palette times", `<input type="checkbox" id="a_pt" ${a.palette_times !== false ? "checked" : ""}>`);
+  if (ps.includes("macro")) h += field("Macro id", `<input type="text" id="a_macro" value="${esc(a.macro || "")}">`);
+  if (ps.includes("group_index")) {
+    h += field("Handle group", `<input type="text" id="a_group" value="${esc(a.group || "Groups")}">`);
+    h += field("Index", `<input type="number" id="a_index" min="0" value="${a.index ?? 1}">`);
+  }
+  if (ps.includes("wheel")) h += field("Wheel", `<select id="a_wheel">` + [..."ABCDE"].map(w =>
+    `<option ${a.wheel === w ? "selected" : ""}>${w}</option>`).join("") + "</select>");
+  if (ps.includes("range")) {
+    h += field("Fader down =", `<input type="number" id="a_min" step="any" value="${a.min ?? (a.type === "wheel" ? 0 : 60)}">`);
+    h += field("Fader up =", `<input type="number" id="a_max" step="any" value="${a.max ?? (a.type === "wheel" ? 255 : 180)}">`);
+  }
+  h += `<p class="hint">${esc(spec.help || "")}</p>`;
+  h += `<div class="warnnote">${spec.experimental ? "Experimental. " : ""}Sent over the Titan WebAPI to
+    ${esc(cfg.titan_host)}:${cfg.titan_port} while output is ON. Not tested on a real rig yet: try it before a show.
+    It only works if Titan answers the WebAPI (Output settings → Check connection).</div>`;
+  return h;
+}
+function bindAction(a) {
+  const on = (id, fn, ev = "oninput") => { if ($(id)) $(id)[ev] = e => { fn(e.target); changed(); }; };
+  on("a_ht", t => { a.handle_type = t.value; renderEditor(); }, "onchange");
+  on("a_h", t => a.handle = t.value.trim());
+  on("a_cue", t => a.cue = +t.value);
+  on("a_level", t => a.level = +t.value);
+  on("a_pt", t => a.palette_times = t.checked, "onchange");
+  on("a_macro", t => a.macro = t.value);
+  on("a_group", t => a.group = t.value);
+  on("a_index", t => a.index = +t.value);
+  on("a_wheel", t => a.wheel = t.value, "onchange");
+  on("a_min", t => a.min = +t.value);
+  on("a_max", t => a.max = +t.value);
+}
+// A sensible playback number from where the control is: pad column, bottom button or fader number.
+function guessHandle(n) { return String(kind(n) === "grid" ? n % 8 + 1 : kind(n) === "track" ? n - 63 : kind(n) === "scene" ? n - 81 : 1); }
+function newAction(type, prev, handle) {
+  const spec = TITAN[type], a = { type };
+  if (spec.handle) Object.assign(a, { handle_type: prev && prev.handle_type || "userNumber",
+                                      handle: prev && prev.handle || handle });
+  for (const p of spec.params || []) {
+    if (p === "cue") a.cue = 1;
+    if (p === "level") a.level = 100;
+    if (p === "palette_times") a.palette_times = true;
+    if (p === "macro") a.macro = "";
+    if (p === "group_index") Object.assign(a, { group: "Groups", index: +handle || 1 });
+    if (p === "wheel") a.wheel = "A";
+    if (p === "range") Object.assign(a, type === "wheel" ? { min: 0, max: 255 } : { min: 60, max: 180 });
+  }
+  return a;
+}
+// what: a button mode ("toggle", "unused"…) or "titan:<action>"
+function assignButton(n, what) {
+  const b = cfg.buttons.find(x => x.note === n);
+  if (!b) return;
+  if (what.startsWith("titan:")) {
+    const type = what.slice(6);
+    b.action = newAction(type, b.mode === "titan" ? b.action : null, guessHandle(n));
+    b.mode = "titan";
+    if (kind(n) === "grid" && !b.active_led && !b.idle_led) { b.active_led = 1; b.idle_led = 5; }
+  } else {
+    if (n === SHIFT && what === "output_status") { toast("Shift has no light."); return; }
+    b.mode = what;
+    if (SENDING.has(b.mode) && (!(b.address >= 1) || usedChannels(b).has(b.address))) b.address = nextFree(b);
+  }
+  changed();
+}
+function assignFader(i, type) {
+  const f = cfg.faders[i];
+  if (!type) f.action = {};
+  else f.action = newAction(type, isTitanFader(f) ? f.action : null, String(i + 1));
+  if (!type && usedChannels(f).has(f.address)) f.address = nextFree(f);
+  changed();
+}
+
+const PALETTE = [
+  ["Buttons: this app", "button", [["momentary", "Momentary (sACN)"], ["toggle", "Toggle (sACN)"],
+    ["fader_enable", "Fader on/off"], ["blackout", "Blackout"], ["output_status", "Output light"], ["unused", "Not used"]]],
+  ...["Cue lists", "Playbacks", "Masters", "Programmer"].map(g => [`Buttons: Titan ${g.toLowerCase()}`, "button",
+    Object.entries(TITAN).filter(([, a]) => a.kind === "button" && a.group === g).map(([k, a]) => ["titan:" + k, a.label])]),
+  ["Faders", "fader", [["", "sACN channel"], ...Object.entries(TITAN).filter(([, a]) => a.kind === "fader")
+    .map(([k, a]) => [k, a.label + (a.experimental ? " ⚠" : "")])]],
+];
+function buildPalette() {
+  let h = `<h2 style="margin:0">Actions</h2><div class="hint">Drag one onto a pad, button or fader, or select a
+    control and click an action. Orange and purple ones are Titan WebAPI commands.</div>`;
+  for (const [title, k, items] of PALETTE) {
+    h += `<div class="grp">${title}</div><div class="chips">` + items.map(([v, label]) => {
+      const titan = k === "button" ? v.startsWith("titan:") : v !== "";
+      const cls = (k === "button" ? "btn-" : "fdr-") + (titan ? "titan" : "app");
+      const help = titan ? (TITAN[k === "button" ? v.slice(6) : v] || {}).help : "";
+      return `<span class="chip ${cls}" draggable="true" data-k="${k}" data-v="${v}" title="${esc(help)}">${esc(label)}</span>`;
+    }).join("") + "</div>";
+  }
+  $("palette").innerHTML = h;
+  document.querySelectorAll("#palette .chip").forEach(c => {
+    c.ondragstart = e => {
+      if (S && S.output.enabled) { e.preventDefault(); toast("Switch output OFF to change mappings."); return; }
+      dragging = { k: c.dataset.k, v: c.dataset.v };
+      e.dataTransfer.setData("text/plain", c.dataset.v); e.dataTransfer.effectAllowed = "copy";
+    };
+    c.ondragend = () => { dragging = null; };
+    c.onclick = () => applyChip(c.dataset.k, c.dataset.v, selected);
+  });
+}
+let dragging = null;
+function applyChip(k, v, target) {
+  if (!cfg || !S || !S.current) return;
+  if (S.output.enabled) { toast("Switch output OFF to change mappings."); return; }
+  if (k === "button" && target.type !== "button") { toast("That action is for a pad or button. Select one first."); return; }
+  if (k === "fader" && target.type !== "fader") { toast("That action is for a fader. Select a fader first."); return; }
+  if (k === "button") assignButton(target.id, v); else assignFader(target.id, v);
+  select(target);
+}
+function dropTarget(el, target) {
+  el.ondragover = e => {
+    if (!dragging || dragging.k !== target.type) return;
+    e.preventDefault(); e.dataTransfer.dropEffect = "copy"; el.classList.add("drop");
+  };
+  el.ondragleave = () => el.classList.remove("drop");
+  el.ondrop = e => {
+    e.preventDefault(); el.classList.remove("drop");
+    if (dragging) applyChip(dragging.k, dragging.v, target);
+    dragging = null;
+  };
+}
+
 /* ---------- settings and devices ---------- */
 function fillSettings() {
   $("universe").value = cfg.universe;
@@ -554,7 +769,12 @@ function fillSettings() {
   $("maxPct").value = cfg.max_output_percent;
   $("ledFb").checked = cfg.led_feedback;
   $("meters").checked = cfg.show_meters;
+  $("titanHost").value = cfg.titan_host;
+  $("titanPort").value = cfg.titan_port;
 }
+$("titanHost").oninput = e => { cfg.titan_host = e.target.value.trim(); changed(); };
+$("titanPort").oninput = e => { cfg.titan_port = +e.target.value; changed(); };
+$("titanCheck").onclick = async () => { if (await flushApply()) api("titan_check", {}); };
 $("universe").oninput = e => { cfg.universe = +e.target.value; changed(); };
 $("dest").onchange = e => {
   cfg.unicast_ip = e.target.value === "unicast" ? ($("ip").value || "127.0.0.1") : null;
@@ -656,6 +876,7 @@ async function poll() {
 }
 
 buildApc();
+buildPalette();
 poll();
 </script>
 </body>

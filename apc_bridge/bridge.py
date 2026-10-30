@@ -16,17 +16,21 @@ Rules:
 * Blackout sends zero on every channel and ignores faders and buttons until
   it is released. Toggles are switched off, and every fader must then be
   picked up from zero, so nothing jumps back on when it is released.
-* LEDs reflect this program's own state. sACN is one-way, so Titan's real
-  playback state is never known.
+* Titan WebAPI buttons and faders follow the same rules (only while output
+  is on, never during blackout, faders need pickup). The engine only lists
+  what to send in `titan_events`; the app sends it. Blackout also pulls
+  WebAPI playback/master/group faders to zero.
+* LEDs reflect this program's own state. sACN is one-way and the WebAPI
+  calls are fire-and-forget, so Titan's real playback state is never known.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from . import apc_mini
+from . import apc_mini, webapi
 from .apc_mini import GridLed, RoundLed
-from .config import (BLACKOUT, FADER_ENABLE, MOMENTARY, OUTPUT_STATUS, SENDING_MODES, TOGGLE, UNUSED,
+from .config import (BLACKOUT, FADER_ENABLE, MOMENTARY, OUTPUT_STATUS, SENDING_MODES, TITAN, TOGGLE, UNUSED,
                      BridgeConfig, ButtonMapping, FaderMapping)
 from .pickup import Pickup
 
@@ -66,6 +70,9 @@ class BridgeEngine:
         self.learned: tuple[str, int] | None = None   # ("fader", index) or ("button", note)
         self.pressed: set[int] = set()
         self.active: set[int] = set()                 # buttons whose ON level is being sent
+        self.titan_held: set[int] = set()             # Titan-action buttons whose press was sent
+        # WebAPI work for the app: ("press"|"release", note) or ("fader", index, level 0-1)
+        self.titan_events: list[tuple] = []
         self.faders: list[FaderState] = [FaderState(m) for m in config.faders]
         self._by_cc = {f.mapping.cc: f for f in self.faders}
 
@@ -86,6 +93,7 @@ class BridgeEngine:
         # Buttons that no longer send anything lose their ON state.
         self.active = {n for n in self.active
                        if (b := config.button(n)) is not None and b.mode in SENDING_MODES}
+        self._release_titan_buttons(keep=lambda b: b.mode == TITAN)
 
     # ------------------------------------------------------------ output
     def set_output_enabled(self, enabled: bool) -> None:
@@ -95,18 +103,35 @@ class BridgeEngine:
         if not enabled:
             # Held momentary buttons are released; toggles keep their state.
             self.active = {n for n in self.active if self.config.button(n).mode == TOGGLE}
+            self._release_titan_buttons()
         self.output_enabled = enabled
 
     def set_blackout(self, on: bool) -> None:
         if on:
             self.active.clear()
-            for f in self.faders:
+            self._release_titan_buttons()
+            for i, f in enumerate(self.faders):
+                if f.mapping.uses_webapi and self.output_enabled and \
+                        webapi.ACTIONS[f.mapping.action["type"]].get("zero_on_blackout"):
+                    self.titan_events.append(("fader", i, 0.0))
                 f.output = 0
                 self._arm(f)
         elif self.blackout:
             for f in self.faders:  # pick up from zero
                 self._arm(f)
         self.blackout = on
+
+    def _release_titan_buttons(self, keep=lambda b: False) -> None:
+        """Send the release of held Titan buttons (so a flash never sticks)."""
+        for note in sorted(self.titan_held):
+            b = self.config.button(note)
+            if b is None or not keep(b):
+                self.titan_held.discard(note)
+                self.titan_events.append(("release", note))
+
+    def take_titan_events(self) -> list[tuple]:
+        events, self.titan_events = self.titan_events, []
+        return events
 
     def toggle_fader(self, index: int) -> None:
         f = self.faders[index]
@@ -147,6 +172,9 @@ class BridgeEngine:
         if taken is None or taken == f.output:
             return False
         f.output = taken
+        if f.mapping.uses_webapi:
+            self.titan_events.append(("fader", self.faders.index(f), taken / 255))
+            return False
         return True
 
     def handle_press(self, note: int) -> bool:
@@ -164,6 +192,11 @@ class BridgeEngine:
             return True
         if self.blackout:
             return False
+        if b.mode == TITAN:
+            if self.output_enabled and note not in self.titan_held:
+                self.titan_held.add(note)
+                self.titan_events.append(("press", note))
+            return False
         if b.mode == FADER_ENABLE and b.fader < len(self.faders):
             self.toggle_fader(b.fader)
             return False
@@ -180,6 +213,10 @@ class BridgeEngine:
 
     def handle_release(self, note: int) -> bool:
         self.pressed.discard(note)
+        if note in self.titan_held:
+            self.titan_held.discard(note)
+            self.titan_events.append(("release", note))
+            return False
         b = self.config.button(note)
         if b is not None and b.mode == MOMENTARY and note in self.active:
             self.active.discard(note)
@@ -196,7 +233,8 @@ class BridgeEngine:
         if self.blackout:
             return bytes(data)
         for f in self.faders:
-            data[f.mapping.address - 1] = f.output
+            if not f.mapping.uses_webapi:
+                data[f.mapping.address - 1] = f.output
         for b in self.config.buttons:
             if b.mode in SENDING_MODES:
                 data[b.address - 1] = self.button_output(b)
@@ -225,6 +263,8 @@ class BridgeEngine:
                 continue  # unused pads keep the meter (if any); Shift has no LED
             if b.mode in SENDING_MODES:
                 leds[b.note] = b.active_led if b.note in self.active else b.idle_led
+            elif b.mode == TITAN:   # lit while held: Titan's own state is not read back
+                leds[b.note] = b.active_led if b.note in self.titan_held else b.idle_led
             elif b.mode == FADER_ENABLE:
                 state = self._fader_status_led(b.fader)
                 # Use the button's chosen colour for "live" on grid pads.

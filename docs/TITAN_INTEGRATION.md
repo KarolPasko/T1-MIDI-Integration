@@ -9,6 +9,14 @@ were used. The "Test" sections say how to check each point safely.
 T1. The plan is now **sACN triggers** (section 5), tested with
 `run_sacn_test.py`.
 
+**Update 30 Oct 2026:** mike reports that the WebAPI now answers from Safari
+on their Mac. The exact setup (which computer and Titan version answered, and
+what it replied) still has to be recorded here. Version 1.3.0 of the app adds
+optional WebAPI actions built only from the commands in the Avolites API
+reference (api.avolites.com/18.0); sACN stays the main route. Nothing in the
+app works around Titan refusing the WebAPI: if Titan replies "Titan is
+unavailable", the app shows that and does nothing else.
+
 **Verified 28 Oct 2026:** with `run_sacn_test.py`, a Set Level trigger with an
 sACN source in Titan Go v18.0 + T1 on the same laptop "works perfect". The
 playback follows the sent value. `run_bridge.py` is built on this.

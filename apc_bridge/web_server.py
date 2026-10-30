@@ -17,6 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from . import webapi
 from .app_core import ActionError, BridgeCore
 
 log = logging.getLogger(__name__)
@@ -30,7 +31,8 @@ def web_dir() -> Path:
 def make_server(core: BridgeCore, port: int = 0) -> tuple[ThreadingHTTPServer, str]:
     """Create (not start) the server. Returns (server, url)."""
     token = secrets.token_urlsafe(24)
-    page = (web_dir() / "index.html").read_text(encoding="utf-8").replace("__TOKEN__", token)
+    page = (web_dir() / "index.html").read_text(encoding="utf-8").replace("__TOKEN__", token) \
+        .replace("__TITAN_ACTIONS__", json.dumps(webapi.ACTIONS))
 
     actions = {
         "refresh_ports": lambda b: core.refresh_ports(),
@@ -47,6 +49,7 @@ def make_server(core: BridgeCore, port: int = 0) -> tuple[ThreadingHTTPServer, s
         "blackout": lambda b: core.set_blackout(bool(b.get("on"))),
         "test": lambda b: core.start_test(str(b.get("mode") or "")),
         "test_stop": lambda b: core.stop_test(),
+        "titan_check": lambda b: core.check_titan(),
     }
 
     class Handler(BaseHTTPRequestHandler):
