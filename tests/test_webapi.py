@@ -49,7 +49,9 @@ def test_go_sends_nothing_on_release():
 def test_every_action_builds_requests():
     for name, spec in webapi.ACTIONS.items():
         a = webapi.normalise({**PB, "type": name, "macro": "M"}, spec["kind"])
-        if name == "tap_tempo":
+        if spec.get("relative"):
+            assert webapi.encoder_call(a, 0.5, 0.1).path.startswith("titan/script/2/Programmer/Editor/Fixtures/Increment")
+        elif name == "tap_tempo":
             assert webapi.speed_call(a, 128).path.endswith("Masters/SetSpeed?handle_userNumber=3&value=128")
         elif spec["kind"] == "button":
             assert webapi.button_calls(a, True)
@@ -239,6 +241,61 @@ def test_core_tap_tempo_sets_speed_master(tmp_path, monkeypatch):
     assert sent == ["titan/script/2/Masters/SetSpeed?handle_userNumber=1&value=120"] * 2
     assert core.state()["titan"]["tempo"] == {"7": 120.0}
     core.shutdown()
+
+
+def test_selection_and_nudge_calls():
+    b = lambda **kw: webapi.normalise(kw, "button")
+    assert paths(webapi.button_calls(b(type="select", numbers="3, 4;5"), True)) == [
+        "titan/script/2/Programmer/Editor/Selection/SetNewHandleSelection?newSelection_userNumberList=3%2C4%2C5"]
+    assert paths(webapi.button_calls(b(type="nudge", attr="pan", step=-2), True)) == [
+        "titan/script/2/Programmer/Editor/Fixtures/IncrementPan?value=-2&timeDelta=0&shiftEnabled=false"]
+    with pytest.raises(webapi.ActionError):
+        b(type="select", numbers="a,b")
+
+
+def test_encoder_calls():
+    enc = webapi.normalise({"type": "encoder", "attr": "tilt", "amount": 50}, "fader")
+    assert webapi.encoder_call(enc, -0.5, 0.04).path == \
+        "titan/script/2/Programmer/Editor/Fixtures/IncrementTilt?value=-25&timeDelta=0.04&shiftEnabled=false"
+    ctl = webapi.normalise({"type": "encoder_control", "control": 12, "amount": 10}, "fader")
+    assert webapi.encoder_call(ctl, 1.0, 0.1).path == ("titan/script/2/Programmer/Editor/Fixtures/IncrementAttribute"
+                                                       "?controlId=12&value=10&timeDelta=0.1&shiftEnabled=false")
+
+
+def test_engine_encoder_fader_sends_movement_without_pickup():
+    cfg = BridgeConfig()
+    cfg.faders[0].action = {"type": "encoder", "attr": "pan", "amount": 100}
+    cfg.validate()
+    e = BridgeEngine(cfg)
+    cc = apc_mini.FADER_CCS[0]
+    e.handle_cc(1, cc, 64)                     # output off: just remembered
+    e.set_output_enabled(True)
+    e.handle_cc(1, cc, 70)                     # up = right
+    e.handle_cc(1, cc, 60)                     # down = left
+    assert e.take_titan_events() == [("fader_delta", 0, 6 / 127), ("fader_delta", 0, -10 / 127)]
+    assert e.led_states()[apc_mini.TRACK_BUTTON_NOTES[0]] == 1      # live straight away
+    e.set_blackout(True)
+    e.handle_cc(1, cc, 100)
+    assert e.take_titan_events() == []
+
+
+def test_client_adds_up_encoder_moves_while_busy():
+    seen, gate = [], threading.Event()
+
+    def opener(req, timeout):
+        gate.wait(2)
+        seen.append(req.full_url.split("4430/")[1])
+        return FakeResponse(b"")
+    client = webapi.TitanClient("1.2.3.4", opener=opener)
+    enc = webapi.normalise({"type": "encoder", "attr": "dimmer", "amount": 100}, "fader")
+    client.submit([webapi.Call("GET", "titan/get/System/SoftwareVersion")])
+    time.sleep(0.05)
+    for d in (0.1, 0.2, -0.05):
+        client.submit_delta(0, d, lambda total, gap: webapi.encoder_call(enc, total, 0))
+    gate.set()
+    client.close()
+    assert seen[1] == "titan/script/2/Programmer/Editor/Fixtures/IncrementDimmer?value=25&timeDelta=0&shiftEnabled=false"
+    assert len(seen) == 2
 
 
 def test_starter_preset_is_valid():

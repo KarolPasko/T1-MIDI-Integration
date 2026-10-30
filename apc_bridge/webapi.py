@@ -69,6 +69,28 @@ ACTIONS: dict[str, dict] = {
               "help": "Runs a macro by its id. Macros.Run"},
     "clear": {"kind": "button", "group": "Programmer", "label": "Clear programmer", "handle": False,
               "help": "Clears the programmer and the selection. Programmer.Editor.ClearAll"},
+    "select": {"kind": "button", "group": "Selection", "label": "Select fixtures/groups", "handle": False,
+               "params": ["numbers"],
+               "help": "Makes these user numbers the selection (e.g. a group's number, or 1,2,3 for fixtures). "
+                       "Programmer.Editor.Selection.SetNewHandleSelection"},
+    "select_clear": {"kind": "button", "group": "Selection", "label": "Clear selection", "handle": False,
+                     "help": "Clears the fixture selection. Programmer.Editor.Selection.Clear"},
+    "sel_next": {"kind": "button", "group": "Selection", "label": "Next fixture", "handle": False,
+                 "help": "Moves the selection pattern one place to the right (one fixture at a time). "
+                         "Programmer.Editor.Selection.PatternNext"},
+    "sel_prev": {"kind": "button", "group": "Selection", "label": "Previous fixture", "handle": False,
+                 "help": "Moves the selection pattern one place to the left. "
+                         "Programmer.Editor.Selection.PatternPrevious"},
+    "locate": {"kind": "button", "group": "Selection", "label": "Locate", "handle": False,
+               "help": "Sets every attribute of the selected fixtures to its locate value. "
+                       "Programmer.Editor.Fixtures.LocateSelectedFixtures"},
+    "fan": {"kind": "button", "group": "Selection", "label": "Fan on/off", "handle": False,
+            "help": "Toggles fan mode for the selection. Programmer.Editor.Fixtures.Fan.ToggleFan"},
+    "nudge": {"kind": "button", "group": "Selection", "label": "Nudge attribute", "handle": False,
+              "params": ["attr", "step"],
+              "help": "Each press turns dimmer, pan or tilt of the selected fixtures by a fixed step, "
+                      "like one click of an encoder (a negative step turns it down/left). "
+                      "Programmer.Editor.Fixtures.IncrementDimmer / IncrementPan / IncrementTilt"},
     # ----- masters
     "master_flash": {"kind": "button", "group": "Masters", "label": "Master flash (held)", "handle": True,
                      "help": "Flashes a master to full while held. Masters.Flash / ClearFlash"},
@@ -90,6 +112,16 @@ ACTIONS: dict[str, dict] = {
     "speed": {"kind": "fader", "group": "Fader", "label": "Speed master (BPM)", "handle": True,
               "params": ["range"],
               "help": "The fader sets a speed master between the two values. Masters.SetSpeed"},
+    "encoder": {"kind": "fader", "group": "Fader", "label": "Encoder (dimmer/pan/tilt)", "handle": False,
+                "params": ["attr", "amount"], "relative": True,
+                "help": "Works like an encoder on the selected fixtures: moving the fader up turns it up/right, "
+                        "moving it down turns it down/left. The amount is how far one full fader travel turns it. "
+                        "Programmer.Editor.Fixtures.IncrementDimmer / IncrementPan / IncrementTilt"},
+    "encoder_control": {"kind": "fader", "group": "Fader", "label": "Encoder (any attribute by ID)", "handle": False,
+                        "params": ["control", "amount"], "relative": True,
+                        "help": "Like the encoder above, for any attribute, picked by its Titan control ID "
+                                "(Programmer.Editor.Fixtures.GetControlIdFromName gives it). "
+                                "Programmer.Editor.Fixtures.IncrementAttribute"},
     "wheel": {"kind": "fader", "group": "Fader", "label": "Programmer wheel", "handle": False,
               "params": ["wheel", "range"], "experimental": True,
               "help": "Sets the value on wheel A-E for the selected fixtures, like turning an encoder. "
@@ -100,7 +132,9 @@ ACTIONS: dict[str, dict] = {
 # Actions whose release also sends a command.
 RELEASE_CALLS = {"flash", "swop", "master_flash", "dbo"}
 
-DEFAULTS = {"handle_type": "userNumber", "handle": "1", "cue": 1, "level": 100, "palette_times": True,
+ATTRS = {"dimmer": "IncrementDimmer", "pan": "IncrementPan", "tilt": "IncrementTilt"}
+DEFAULTS = {"attr": "dimmer", "step": 5, "amount": 100, "numbers": "1", "control": 1,
+            "handle_type": "userNumber", "handle": "1", "cue": 1, "level": 100, "palette_times": True,
             "macro": "", "group": "Groups", "index": 1, "wheel": "A", "min": 0, "max": 255}
 
 
@@ -153,6 +187,26 @@ def normalise(action: dict, kind: str) -> dict:
             elif p == "group_index":
                 out["group"] = str(action.get("group", DEFAULTS["group"])).strip() or DEFAULTS["group"]
                 out["index"] = int(action.get("index", DEFAULTS["index"]))
+            elif p == "attr":
+                attr = str(action.get("attr", "dimmer")).lower()
+                if attr not in ATTRS:
+                    raise ActionError("Attribute must be dimmer, pan or tilt")
+                out["attr"] = attr
+            elif p == "step":
+                out["step"] = float(action.get("step", DEFAULTS["step"]))
+                if out["step"] == 0:
+                    raise ActionError("Step must not be 0")
+            elif p == "amount":
+                out["amount"] = float(action.get("amount", DEFAULTS["amount"]))
+                if out["amount"] == 0:
+                    raise ActionError("Amount must not be 0")
+            elif p == "control":
+                out["control"] = int(action.get("control", DEFAULTS["control"]))
+            elif p == "numbers":
+                nums = [n.strip() for n in str(action.get("numbers", DEFAULTS["numbers"])).replace(";", ",").split(",") if n.strip()]
+                if not nums or not all(n.isdigit() for n in nums):
+                    raise ActionError("Enter user numbers separated by commas, e.g. 1,2,3")
+                out["numbers"] = ",".join(nums)
             elif p == "wheel":
                 wheel = str(action.get("wheel", "A")).upper()
                 if wheel not in WHEELS:
@@ -180,6 +234,8 @@ def describe(action: dict) -> str:
         text += f" {action.get('macro', '')}"
     if action.get("type") == "wheel":
         text = f"Wheel {action.get('wheel', 'A')}"
+    if action.get("type") in ("encoder", "nudge"):
+        text = f"{spec.get('label', '').split(' ')[0]} {action.get('attr', '')}"
     return text
 
 
@@ -250,6 +306,21 @@ def button_calls(action: dict, pressed: bool) -> list[Call]:
         return [_script("Masters/DeadBlackOut", _handle(action))]
     if t == "tap_tempo":
         return []      # needs the tap times: see TapTempo and speed_call()
+    if t == "select":
+        return [_script("Programmer/Editor/Selection/SetNewHandleSelection",
+                        {"newSelection_userNumberList": action["numbers"]})]
+    if t == "select_clear":
+        return [_script("Programmer/Editor/Selection/Clear")]
+    if t == "sel_next":
+        return [_script("Programmer/Editor/Selection/PatternNext")]
+    if t == "sel_prev":
+        return [_script("Programmer/Editor/Selection/PatternPrevious")]
+    if t == "locate":
+        return [_script("Programmer/Editor/Fixtures/LocateSelectedFixtures", {"allAttributes": "true"})]
+    if t == "fan":
+        return [_script("Programmer/Editor/Fixtures/Fan/ToggleFan")]
+    if t == "nudge":
+        return [increment_call(action, action["step"], 0.0)]
     raise ActionError(f"'{t}' is not a button action")
 
 
@@ -271,6 +342,23 @@ def fader_call(action: dict, level: float) -> Call:
         return Call("POST", f"titan/set/2/Programmer/Editor/Fixtures/Attribute{action['wheel']}Value",
                     _num(value).encode())
     raise ActionError(f"'{t}' is not a fader action")
+
+
+def is_relative(action: dict) -> bool:
+    return bool(ACTIONS.get(action.get("type"), {}).get("relative"))
+
+
+def increment_call(action: dict, value: float, time_delta: float) -> Call:
+    """Turn an attribute of the selected fixtures by `value`, like an encoder click."""
+    params = {"value": _num(value), "timeDelta": _num(time_delta), "shiftEnabled": "false"}
+    if action["type"] == "encoder_control":
+        return _script("Programmer/Editor/Fixtures/IncrementAttribute", {"controlId": action["control"], **params})
+    return _script(f"Programmer/Editor/Fixtures/{ATTRS[action['attr']]}", params)
+
+
+def encoder_call(action: dict, fraction: float, time_delta: float) -> Call:
+    """A relative fader moved by `fraction` of its travel (-1..1): turn by that share of the amount."""
+    return increment_call(action, action["amount"] * fraction, time_delta)
 
 
 def speed_call(action: dict, bpm: float) -> Call:
@@ -327,6 +415,8 @@ class TitanClient:
         self._open = opener or urllib.request.urlopen
         self._jobs: queue.Queue = queue.Queue()
         self._latest: dict = {}           # fader key -> newest Call not yet sent
+        self._deltas: dict = {}           # encoder key -> (summed move, call maker) not yet sent
+        self._last_delta: dict = {}       # encoder key -> when it last sent
         self._lock = threading.Lock()
         self.sent = 0
         self.errors = 0
@@ -338,6 +428,15 @@ class TitanClient:
     def submit(self, calls: list[Call]) -> None:
         for c in calls:
             self._jobs.put(c)
+
+    def submit_delta(self, key, fraction: float, make_call) -> None:
+        """Add an encoder move; moves made while Titan is busy are added together."""
+        with self._lock:
+            fresh = key not in self._deltas
+            total, _ = self._deltas.get(key, (0.0, None))
+            self._deltas[key] = (total + fraction, make_call)
+        if fresh:
+            self._jobs.put(("delta", key))
 
     def submit_fader(self, key, call: Call) -> None:
         with self._lock:
@@ -359,7 +458,16 @@ class TitanClient:
             job = self._jobs.get()
             if job is None:      # close(): everything queued before it has been sent
                 return
-            if isinstance(job, tuple):
+            if isinstance(job, tuple) and job[0] == "delta":
+                with self._lock:
+                    total, make_call = self._deltas.pop(job[1], (0.0, None))
+                if make_call is None or abs(total) < 1e-9:
+                    continue
+                now = time.monotonic()
+                gap = min(now - self._last_delta.get(job[1], now - 1.0), 1.0)
+                self._last_delta[job[1]] = now
+                job = make_call(total, gap)
+            elif isinstance(job, tuple):
                 with self._lock:
                     job = self._latest.pop(job[1], None)
                 if job is None:

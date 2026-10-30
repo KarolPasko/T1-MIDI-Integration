@@ -179,7 +179,13 @@ class BridgeCore:
         cfg = self.engine.config
         for ev in events:
             try:
-                if ev[0] == "fader":
+                if ev[0] == "fader_delta":
+                    f = cfg.faders[ev[1]]
+                    if f.uses_webapi and webapi.is_relative(f.action):
+                        action = f.action
+                        self.titan.submit_delta(ev[1], ev[2],
+                                                lambda total, gap, a=action: webapi.encoder_call(a, total, gap))
+                elif ev[0] == "fader":
                     f = cfg.faders[ev[1]]
                     if f.uses_webapi:
                         self.titan.submit_fader(ev[1], webapi.fader_call(f.action, ev[2]))

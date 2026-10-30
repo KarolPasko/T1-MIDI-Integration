@@ -227,6 +227,14 @@ change in the editor on the right.
 | Clear programmer | Clears the programmer and selection (Programmer.Editor.ClearAll) |
 | Tap tempo | Tap in time; the app works out the BPM from your taps and sets a speed master to it (Masters.SetSpeed). A 2-second pause starts a new count |
 | Master flash / DBO (held) | Flashes a master to full, or to zero, while held (Masters.Flash / DeadBlackOut, ClearFlash on release) |
+| Select fixtures/groups | Makes these user numbers the selection, e.g. a group (Programmer.Editor.Selection.SetNewHandleSelection) |
+| Clear selection | Clears the selection (Programmer.Editor.Selection.Clear) |
+| Next / Previous fixture | Steps through the selection one fixture at a time (Selection.PatternNext / PatternPrevious) |
+| Locate | Locates the selected fixtures (Programmer.Editor.Fixtures.LocateSelectedFixtures) |
+| Fan on/off | Toggles fan mode (Programmer.Editor.Fixtures.Fan.ToggleFan) |
+| Nudge attribute | Each press turns dimmer, pan or tilt of the selection by a fixed step, like one encoder click (IncrementDimmer/Pan/Tilt) |
+| Fader: Encoder (dimmer/pan/tilt) | The fader works like an encoder: moving up turns the selection's dimmer/pan/tilt up/right, moving down turns it down/left. No pickup needed (IncrementDimmer/Pan/Tilt) |
+| Fader: Encoder (any attribute by ID) | The same for any attribute, by its Titan control ID (Programmer.Editor.Fixtures.IncrementAttribute) |
 | Fader: Playback level | The fader sets a playback's level (Playbacks.SetPlaybackLevel) |
 | Fader: Master level | The fader sets a master (Masters.SetMaster) |
 | Fader: Group intensity | The fader sets a group's intensity (Group.SetGroupFaderLevel) |
@@ -240,6 +248,12 @@ Things to know:
 
 * These commands come from the Avolites Titan API reference (version 18.0).
   **None has been tried on a real rig yet.** Try each one before a show.
+* Encoder faders turn the selected fixtures, so select some first (in Titan,
+  or with a Select button). A fader only has so much travel, and moving it
+  back turns the encoder back too. To keep turning one way, switch the fader
+  off with its button, move it back, and switch it on again: moves made while
+  it is off are ignored. Avolites does not say what units the amount
+  uses, so start with a small "Full fader travel" value and adjust.
 * The programmer wheel action uses the documented property URL, but Avolites
   does not document how the value is sent, so it may do nothing.
 * Titan actions follow the same safety rules as sACN: nothing is sent while

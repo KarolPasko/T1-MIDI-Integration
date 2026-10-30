@@ -375,6 +375,7 @@ $("importFile").onchange = async e => {
 async function flushApply() {
   clearTimeout(applyTimer);
   if (!dirty) return true;
+  applySeq++;
   const j = await api("settings", { config: cfg });
   if (j.ok) dirty = false;
   return j.ok;
@@ -513,7 +514,8 @@ function render() {
     }
     else if (!f.enabled) { st.textContent = "Off"; st.className = "st offs"; }
     else if (!on) { st.textContent = ""; st.className = "st"; }
-    else if (f.picked_up) { st.textContent = "LIVE"; st.className = "st live"; }
+    else if (f.picked_up || (cfg && TITAN[(cfg.faders[i].action || {}).type] && TITAN[cfg.faders[i].action.type].relative)) {
+      st.textContent = "LIVE"; st.className = "st live"; }
     else { st.textContent = `Pickup ${Math.round(f.target / 2.55)}%`; st.className = "st wait"; }
     if (cfg && cfg.faders[i]) {
       const fm = cfg.faders[i], t = isTitanFader(fm);
@@ -618,6 +620,10 @@ function actionText(a) {
   const spec = a && TITAN[a.type];
   if (!spec) return "";
   if (a.type === "wheel") return "Wheel " + (a.wheel || "A");
+  if (a.type === "encoder") return "Enc " + (a.attr || "dimmer");
+  if (a.type === "encoder_control") return "Enc #" + (a.control ?? "");
+  if (a.type === "nudge") return (a.step < 0 ? "− " : "+ ") + (a.attr || "dimmer");
+  if (a.type === "select") return "Sel " + (a.numbers || "");
   let t = spec.label.replace(" (while held)", "").replace(" (held)", "");
   if (spec.handle) t += " " + (a.handle_type === "userNumber" ? "PB" : "") + (a.handle || "");
   if (a.cue != null && (a.type === "cue_go" || a.type === "set_next_cue")) t += " Q" + a.cue;
@@ -642,6 +648,15 @@ function actionFields(a, k) {
     h += field("Handle group", `<input type="text" id="a_group" value="${esc(a.group || "Groups")}">`);
     h += field("Index", `<input type="number" id="a_index" min="0" value="${a.index ?? 1}">`);
   }
+  if (ps.includes("attr")) h += field("Attribute", `<select id="a_attr">` + ["dimmer", "pan", "tilt"].map(v =>
+    `<option value="${v}" ${a.attr === v ? "selected" : ""}>${v[0].toUpperCase() + v.slice(1)}</option>`).join("") + "</select>");
+  if (ps.includes("step")) h += field("Step per press", `<input type="number" id="a_step" step="any" value="${a.step ?? 5}">`,
+    "Negative = down / left.");
+  if (ps.includes("amount")) h += field("Full fader travel =", `<input type="number" id="a_amount" step="any" value="${a.amount ?? 100}">`,
+    "How far the whole fader turns the encoder. Negative reverses it. Titan's units are not documented: start small.");
+  if (ps.includes("control")) h += field("Control ID", `<input type="number" id="a_control" value="${a.control ?? 1}">`);
+  if (ps.includes("numbers")) h += field("User numbers", `<input type="text" id="a_numbers" value="${esc(a.numbers || "1")}">`,
+    "A group's or fixtures' user numbers, separated by commas.");
   if (ps.includes("wheel")) h += field("Wheel", `<select id="a_wheel">` + [..."ABCDE"].map(w =>
     `<option ${a.wheel === w ? "selected" : ""}>${w}</option>`).join("") + "</select>");
   if (ps.includes("range")) {
@@ -667,6 +682,11 @@ function bindAction(a) {
   on("a_group", t => a.group = t.value);
   on("a_index", t => a.index = +t.value);
   on("a_wheel", t => a.wheel = t.value, "onchange");
+  on("a_attr", t => a.attr = t.value, "onchange");
+  on("a_step", t => a.step = +t.value);
+  on("a_amount", t => a.amount = +t.value);
+  on("a_control", t => a.control = +t.value);
+  on("a_numbers", t => a.numbers = t.value);
   on("a_min", t => a.min = +t.value);
   on("a_max", t => a.max = +t.value);
 }
@@ -683,6 +703,11 @@ function newAction(type, prev, handle) {
     if (p === "macro") a.macro = "";
     if (p === "group_index") Object.assign(a, { group: "Groups", index: +handle || 1 });
     if (p === "wheel") a.wheel = "A";
+    if (p === "attr") a.attr = "dimmer";
+    if (p === "step") a.step = 5;
+    if (p === "amount") a.amount = 100;
+    if (p === "control") a.control = 1;
+    if (p === "numbers") a.numbers = handle;
     if (p === "range") Object.assign(a, type === "wheel" ? { min: 0, max: 255 } : { min: 60, max: 180 });
   }
   return a;
@@ -705,6 +730,7 @@ function assignButton(n, what) {
 }
 function assignFader(i, type) {
   const f = cfg.faders[i];
+  if (/^Playback \d+( \(master fader\))?$/.test(f.label)) f.label = "";   // a default name would be misleading
   if (!type) f.action = {};
   else f.action = newAction(type, isTitanFader(f) ? f.action : null, String(i + 1));
   if (!type && usedChannels(f).has(f.address)) f.address = nextFree(f);
@@ -714,7 +740,7 @@ function assignFader(i, type) {
 const PALETTE = [
   ["Buttons: this app", "button", [["momentary", "Momentary (sACN)"], ["toggle", "Toggle (sACN)"],
     ["fader_enable", "Fader on/off"], ["blackout", "Blackout"], ["output_status", "Output light"], ["unused", "Not used"]]],
-  ...["Cue lists", "Playbacks", "Masters", "Programmer"].map(g => [`Buttons: Titan ${g.toLowerCase()}`, "button",
+  ...["Cue lists", "Playbacks", "Masters", "Programmer", "Selection"].map(g => [`Buttons: Titan ${g.toLowerCase()}`, "button",
     Object.entries(TITAN).filter(([, a]) => a.kind === "button" && a.group === g).map(([k, a]) => ["titan:" + k, a.label])]),
   ["Faders", "fader", [["", "sACN channel"], ...Object.entries(TITAN).filter(([, a]) => a.kind === "fader")
     .map(([k, a]) => [k, a.label + (a.experimental ? " ⚠" : "")])]],
@@ -857,14 +883,16 @@ function appendLog(lines) {
   if (atEnd) box.scrollTop = box.scrollHeight;
 }
 
+let applySeq = 0;   // a state fetched while an edit was being applied may be older than the edit
 async function poll() {
+  const seq = applySeq;
   const j = await api("state?since=" + logSeq);
   $("bridgeBanner").style.display = j.lost ? "block" : "none";
   if (j.ok) {
     const first = !S;
     S = j.state;
     if (first) fillAbout($("startAbout"));
-    if (!dirty) {
+    if (!dirty && seq === applySeq) {
       const fresh = JSON.stringify(S.config);
       if (!cfg || JSON.stringify(cfg) !== fresh) {
         const focused = document.activeElement && document.activeElement.id;
