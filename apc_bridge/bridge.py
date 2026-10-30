@@ -71,7 +71,7 @@ class BridgeEngine:
         self.pressed: set[int] = set()
         self.active: set[int] = set()                 # buttons whose ON level is being sent
         self.titan_held: set[int] = set()             # Titan-action buttons whose press was sent
-        # WebAPI work for the app: ("press"|"release", note) or ("fader", index, level 0-1)
+        # WebAPI work for the app: ("press", note, time), ("release", note) or ("fader", index, level 0-1)
         self.titan_events: list[tuple] = []
         self.faders: list[FaderState] = [FaderState(m) for m in config.faders]
         self._by_cc = {f.mapping.cc: f for f in self.faders}
@@ -177,8 +177,8 @@ class BridgeEngine:
             return False
         return True
 
-    def handle_press(self, note: int) -> bool:
-        """A button went down. Returns True if the sACN output changed."""
+    def handle_press(self, note: int, at: float | None = None) -> bool:
+        """A button went down (at = when, for tap tempo). Returns True if the sACN output changed."""
         self.pressed.add(note)
         b = self.config.button(note)
         if b is None:
@@ -195,7 +195,7 @@ class BridgeEngine:
         if b.mode == TITAN:
             if self.output_enabled and note not in self.titan_held:
                 self.titan_held.add(note)
-                self.titan_events.append(("press", note))
+                self.titan_events.append(("press", note, at))
             return False
         if b.mode == FADER_ENABLE and b.fader < len(self.faders):
             self.toggle_fader(b.fader)

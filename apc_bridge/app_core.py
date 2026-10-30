@@ -102,6 +102,7 @@ class BridgeCore:
         self.test: HardwareTest | None = None   # APC mini hardware test, only while output is OFF
         self.titan: webapi.TitanClient | None = None   # only while output is ON and something uses the WebAPI
         self.titan_check: dict | None = None
+        self.taps = webapi.TapTempo()
         self.dirty = False
         self._last_send = self._last_led = self._last_watchdog = 0.0
         self._stop = threading.Event()
@@ -148,7 +149,7 @@ class BridgeCore:
             if ev.is_cc:
                 self.dirty |= self.engine.handle_cc(ev.channel, ev.number, ev.value)
             elif ev.is_press:
-                self.dirty |= self.engine.handle_press(ev.number)
+                self.dirty |= self.engine.handle_press(ev.number, ev.timestamp)
             elif ev.is_release:
                 self.dirty |= self.engine.handle_release(ev.number)
         self._send_titan()
@@ -184,7 +185,14 @@ class BridgeCore:
                         self.titan.submit_fader(ev[1], webapi.fader_call(f.action, ev[2]))
                 else:
                     b = cfg.button(ev[1])
-                    if b is not None and b.mode == TITAN:
+                    if b is None or b.mode != TITAN:
+                        continue
+                    if b.action["type"] == "tap_tempo":
+                        if ev[0] == "press":
+                            bpm = self.taps.tap(b.note, ev[2] if ev[2] is not None else time.time())
+                            if bpm is not None:
+                                self.titan.submit([webapi.speed_call(b.action, bpm)])
+                    else:
                         self.titan.submit(webapi.button_calls(b.action, ev[0] == "press"))
             except (webapi.ActionError, KeyError, IndexError) as exc:
                 log.error("Titan action skipped: %s", exc)
@@ -491,7 +499,8 @@ class BridgeCore:
                           "errors": self.titan.errors if self.titan else 0,
                           "error": self.titan.last_error if self.titan else None,
                           "check": self.titan_check,
-                          "held": sorted(e.titan_held)},
+                          "held": sorted(e.titan_held),
+                          "tempo": {str(n): bpm for n, bpm in self.taps.bpm.items()}},
                 "learning": e.learning,
                 "learned": list(learned) if learned else None,
                 "pressed": sorted(e.pressed),

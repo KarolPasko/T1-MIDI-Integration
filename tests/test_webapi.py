@@ -49,7 +49,9 @@ def test_go_sends_nothing_on_release():
 def test_every_action_builds_requests():
     for name, spec in webapi.ACTIONS.items():
         a = webapi.normalise({**PB, "type": name, "macro": "M"}, spec["kind"])
-        if spec["kind"] == "button":
+        if name == "tap_tempo":
+            assert webapi.speed_call(a, 128).path.endswith("Masters/SetSpeed?handle_userNumber=3&value=128")
+        elif spec["kind"] == "button":
             assert webapi.button_calls(a, True)
         else:
             assert webapi.fader_call(a, 0.5).path.startswith("titan/")
@@ -163,7 +165,7 @@ def test_engine_titan_button_only_while_output_on():
     e.handle_press(0)
     assert e.led_states()[0] == e.config.button(0).active_led
     e.handle_release(0)
-    assert e.take_titan_events() == [("press", 0), ("release", 0)]
+    assert e.take_titan_events() == [("press", 0, None), ("release", 0)]
 
 
 def test_engine_releases_held_flash_on_output_off_and_blackout():
@@ -171,7 +173,7 @@ def test_engine_releases_held_flash_on_output_off_and_blackout():
     e.set_output_enabled(True)
     e.handle_press(0)
     e.set_output_enabled(False)
-    assert e.take_titan_events() == [("press", 0), ("release", 0)]
+    assert e.take_titan_events() == [("press", 0, None), ("release", 0)]
     e.set_output_enabled(True)
     e.handle_press(0)
     e.set_blackout(True)
@@ -191,6 +193,52 @@ def test_engine_titan_fader_needs_pickup_and_skips_sacn():
     e.handle_cc(1, cc, 127)
     assert e.take_titan_events()[-1] == ("fader", 0, 1.0)
     assert e.dmx_frame()[e.config.faders[0].address - 1] == 0
+
+
+def test_tap_tempo():
+    taps = webapi.TapTempo()
+    assert taps.tap(5, 10.0) is None              # one tap is not a tempo
+    assert taps.tap(5, 10.5) == 120.0
+    assert taps.tap(5, 11.0) == 120.0
+    assert taps.tap(5, 11.6) == pytest.approx(112.5, abs=0.1)   # average of the gaps so far
+    assert taps.tap(5, 20.0) is None              # a long pause starts again
+    assert taps.tap(5, 20.25) == 240.0
+    for i in range(10):                           # only the last 4 gaps count
+        taps.tap(6, 100 + i * 0.6)
+    assert taps.tap(6, 100 + 10 * 0.6) == 100.0
+    assert taps.bpm[6] == 100.0
+
+
+def test_core_tap_tempo_sets_speed_master(tmp_path, monkeypatch):
+    sent = []
+
+    class Client:
+        def __init__(self, host, port, dry_run):
+            self.sent = self.errors = 0
+            self.last_error = None
+
+        def submit(self, calls):
+            sent.extend(c.path for c in calls)
+
+        def close(self, wait_s=0):
+            pass
+
+    monkeypatch.setattr(webapi, "TitanClient", Client)
+    cfg = BridgeConfig()
+    b = cfg.button(7)
+    b.mode, b.action = TITAN, {"type": "tap_tempo", "handle_type": "userNumber", "handle": "1"}
+    cfg.validate()
+    core = BridgeCore(tmp_path, simulate_midi=True)
+    core.engine.apply_config(cfg)
+    core.simulate_output = True
+    core.set_output(True)
+    for t in (1.0, 1.5, 2.0):
+        core.engine.handle_press(7, t)
+        core.engine.handle_release(7)
+        core._send_titan()
+    assert sent == ["titan/script/2/Masters/SetSpeed?handle_userNumber=1&value=120"] * 2
+    assert core.state()["titan"]["tempo"] == {"7": 120.0}
+    core.shutdown()
 
 
 def test_starter_preset_is_valid():

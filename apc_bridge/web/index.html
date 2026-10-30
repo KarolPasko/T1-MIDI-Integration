@@ -495,7 +495,8 @@ function render() {
     el.className = [el.dataset.base, ledClass(note, leds[n] || 0), pressed.has(note) ? "pressed" : "",
                     selected.type === "button" && selected.id === note ? "selected" : ""].join(" ");
     el.querySelector(".lbl").textContent = b && b.mode !== "unused" && kind(note) === "grid"
-      ? (b.label || (b.mode === "titan" ? actionText(b.action) : "")) + (b.mode === "toggle" && b.group ? ` [G${b.group}]` : "") : "";
+      ? (b.label || (b.mode === "titan" ? actionText(b.action) : "")) + (b.mode === "toggle" && b.group ? ` [G${b.group}]` : "")
+        + (b.mode === "titan" && S.titan.tempo[note] ? ` ${S.titan.tempo[note]} BPM` : "") : "";
     el.classList.toggle("titan", !!b && b.mode === "titan");
   }
   S.faders.forEach((f, i) => {
@@ -648,6 +649,8 @@ function actionFields(a, k) {
     h += field("Fader up =", `<input type="number" id="a_max" step="any" value="${a.max ?? (a.type === "wheel" ? 255 : 180)}">`);
   }
   h += `<p class="hint">${esc(spec.help || "")}</p>`;
+  if (a.type === "tap_tempo") h += `<p class="hint">Last tempo: ${S.titan.tempo[selected.id] ? S.titan.tempo[selected.id] + " BPM"
+    : "none yet"}. The speed master is picked by its user number in Titan.</p>`;
   h += `<div class="warnnote">${spec.experimental ? "Experimental. " : ""}Sent over the Titan WebAPI to
     ${esc(cfg.titan_host)}:${cfg.titan_port} while output is ON. Not tested on a real rig yet: try it before a show.
     It only works if Titan answers the WebAPI (Output settings → Check connection).</div>`;

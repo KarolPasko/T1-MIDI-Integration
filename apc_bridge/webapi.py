@@ -72,6 +72,9 @@ ACTIONS: dict[str, dict] = {
     # ----- masters
     "master_flash": {"kind": "button", "group": "Masters", "label": "Master flash (held)", "handle": True,
                      "help": "Flashes a master to full while held. Masters.Flash / ClearFlash"},
+    "tap_tempo": {"kind": "button", "group": "Masters", "label": "Tap tempo", "handle": True,
+                  "help": "Tap in time: the app works out the BPM from your last taps and sets the speed "
+                          "master to it (from the 2nd tap; a pause of 2 s starts again). Masters.SetSpeed"},
     "dbo": {"kind": "button", "group": "Masters", "label": "DBO (held)", "handle": True,
             "help": "Dead black out: flashes a master to zero while held. Masters.DeadBlackOut / ClearFlash"},
     # ----- fader actions
@@ -245,6 +248,8 @@ def button_calls(action: dict, pressed: bool) -> list[Call]:
         return [_script("Masters/Flash", _handle(action))]
     if t == "dbo":
         return [_script("Masters/DeadBlackOut", _handle(action))]
+    if t == "tap_tempo":
+        return []      # needs the tap times: see TapTempo and speed_call()
     raise ActionError(f"'{t}' is not a button action")
 
 
@@ -266,6 +271,40 @@ def fader_call(action: dict, level: float) -> Call:
         return Call("POST", f"titan/set/2/Programmer/Editor/Fixtures/Attribute{action['wheel']}Value",
                     _num(value).encode())
     raise ActionError(f"'{t}' is not a fader action")
+
+
+def speed_call(action: dict, bpm: float) -> Call:
+    """Set the speed master in `action` to `bpm`."""
+    return _script("Masters/SetSpeed", {**_handle(action), "value": _num(bpm)})
+
+
+class TapTempo:
+    """Works out a BPM from button taps, like a console's tap-tempo button.
+
+    Uses the average of the last few gaps between taps. A gap longer than
+    RESET_S starts a new count, so the first tap after a pause never sends.
+    """
+
+    RESET_S = 2.0
+    KEEP = 4          # gaps averaged
+    MIN_BPM, MAX_BPM = 20.0, 400.0
+
+    def __init__(self):
+        self._taps: dict[int, list[float]] = {}
+        self.bpm: dict[int, float] = {}
+
+    def tap(self, key: int, at: float) -> float | None:
+        taps = self._taps.setdefault(key, [])
+        if taps and not 0 < at - taps[-1] <= self.RESET_S:
+            taps.clear()
+        taps.append(at)
+        del taps[:-(self.KEEP + 1)]
+        if len(taps) < 2:
+            return None
+        gap = (taps[-1] - taps[0]) / (len(taps) - 1)
+        bpm = round(min(max(60.0 / gap, self.MIN_BPM), self.MAX_BPM), 1)
+        self.bpm[key] = bpm
+        return bpm
 
 
 def _num(x: float) -> str:

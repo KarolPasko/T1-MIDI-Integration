@@ -225,6 +225,7 @@ change in the editor on the right.
 | Palette | Recalls a palette (Palette.ApplyPalette) |
 | Macro | Runs a macro by its id (Macros.Run) |
 | Clear programmer | Clears the programmer and selection (Programmer.Editor.ClearAll) |
+| Tap tempo | Tap in time; the app works out the BPM from your taps and sets a speed master to it (Masters.SetSpeed). A 2-second pause starts a new count |
 | Master flash / DBO (held) | Flashes a master to full, or to zero, while held (Masters.Flash / DeadBlackOut, ClearFlash on release) |
 | Fader: Playback level | The fader sets a playback's level (Playbacks.SetPlaybackLevel) |
 | Fader: Master level | The fader sets a master (Masters.SetMaster) |
