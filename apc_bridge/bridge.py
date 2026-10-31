@@ -161,12 +161,17 @@ class BridgeEngine:
         f = self._by_cc.get(cc)
         if f is None:
             return False
-        f.physical = value
+        previous, f.physical = f.physical, value
         if self.learning:
             self.learned = ("fader", self.faders.index(f))
             self.learning = False
             return False
         if self.blackout or not (self.output_enabled and f.mapping.enabled):
+            return False
+        if f.mapping.uses_webapi and webapi.is_relative(f.mapping.action):
+            # An encoder: only the movement counts, so there is nothing to pick up.
+            if previous is not None and value != previous:
+                self.titan_events.append(("fader_delta", self.faders.index(f), (value - previous) / 127))
             return False
         taken = f.pickup.update(scale(value, f.mapping, self.config.max_output_percent))
         if taken is None or taken == f.output:
@@ -244,7 +249,8 @@ class BridgeEngine:
         f = self.faders[index]
         if not f.mapping.enabled:
             return RoundLed.OFF
-        if self.output_enabled and f.picked_up:
+        relative = f.mapping.uses_webapi and webapi.is_relative(f.mapping.action)
+        if self.output_enabled and (f.picked_up or relative):
             return RoundLed.ON
         return RoundLed.BLINK  # live but waiting for pickup (or output off)
 
